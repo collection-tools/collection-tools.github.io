@@ -76,7 +76,7 @@ main { padding: 12px; max-width: 560px; margin: 0 auto; }
 .hero-amount small { font-size: 22px; font-weight: 700; margin-left: 2px; }
 /* 台の数字と、その右のいまの現場。現場は数字と大物ボタンの間の空きに置く */
 .hero-row { display: flex; align-items: flex-end; }
-.hero-row .hero-amount { flex: none; white-space: nowrap; }
+.hero-row .hero-amount { flex: none; white-space: nowrap; cursor: pointer; }
 .hero-site { flex: 1; min-width: 0; margin-right: 118px; padding-bottom: 4px; display: flex; flex-direction: column; align-items: center; line-height: 1.15; font-size: 12px; color: var(--text2); white-space: nowrap; }
 .hero-site b { font-size: 22px; color: var(--text); font-weight: 800; font-variant-numeric: tabular-nums; }
 .hero-site small { font-size: 13px; font-weight: 700; color: var(--text); margin-left: 1px; }
@@ -1361,6 +1361,12 @@ document.getElementById('padAdd').onclick = () => {
 };
 
 document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); };
+// 電卓の大きい数字を押すと、テンキーでこの台の点数をじかに打つ（足すのではなく、打った数字がそのまま点数になる）
+document.getElementById('heroAmount').onclick = () => {
+  padMode = 'dai'; editS = null; setupPad();
+  document.getElementById('padSheet').classList.add('on');
+  backToCalc = true;
+};
 document.getElementById('padRedo').onclick = () => { padMode = 'dai'; setupPad(); };
 document.getElementById('padToMove').onclick = e => {
   const b = e.target.closest('[data-tomove]');
