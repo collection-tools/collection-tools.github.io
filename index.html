@@ -173,6 +173,11 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 /* 残りの高さを行の数で分けて、ボタンを縦に大きくする */
 #calcBody .combo-row { flex: 1; min-height: 0; grid-auto-rows: 1fr; }
 #calcBody .combo-row .pbtn { height: auto; min-height: 0; font-size: 19px; }
+/* 大きい数字を押した時：料金のボタンを隠して、同じ場所にテンキー */
+#calcSheet.padin .combo-row { display: none; }
+#calcBody .pad { flex: 1; min-height: 0; margin: 0 0 8px; display: flex; flex-direction: column; }
+#calcBody .pad-keys { flex: 1; grid-auto-rows: 1fr; }
+#calcBody .kbtn { height: auto; min-height: 0; }
 
 /* テンキー */
 .pad { margin-top: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
@@ -1361,11 +1366,20 @@ document.getElementById('padAdd').onclick = () => {
 };
 
 document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); };
-// 電卓の大きい数字を押すと、テンキーでこの台の点数をじかに打つ（足すのではなく、打った数字がそのまま点数になる）
+// 電卓の大きい数字を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字がそのままこの台の点数になる
+// 登録すると電卓ごと閉じる。もう一度数字を押すと料金のボタンに戻る
+function padEl() { return document.querySelector('.pad'); }
+function padHome() { return document.querySelector('#padSheet .sheet-body'); }
+function padBack() {
+  if (padEl().parentNode === padHome()) return;
+  padHome().appendChild(padEl());
+  document.getElementById('calcSheet').classList.remove('padin');
+}
 document.getElementById('heroAmount').onclick = () => {
+  if (padEl().parentNode !== padHome()) { padBack(); return; }
   padMode = 'dai'; editS = null; setupPad();
-  document.getElementById('padSheet').classList.add('on');
-  backToCalc = true;
+  document.getElementById('calcBody').appendChild(padEl());
+  document.getElementById('calcSheet').classList.add('padin');
 };
 document.getElementById('padRedo').onclick = () => { padMode = 'dai'; setupPad(); };
 document.getElementById('padToMove').onclick = e => {
@@ -1523,6 +1537,7 @@ function openPanel(id) {
 // 電卓の中のテンキーは電卓の上に重ねて開く。閉じたら電卓だけが残る
 let backToCalc = false;
 function closeAll() {
+  padBack();
   // 電卓の上に重ねたテンキーは、テンキーだけ閉じる（足した時も、✕の時も）
   if (backToCalc && document.getElementById('padSheet').classList.contains('on')) {
     backToCalc = false;
