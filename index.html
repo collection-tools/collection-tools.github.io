@@ -175,10 +175,10 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 #calcBody .combo-row .pbtn { height: auto; min-height: 0; font-size: 19px; }
 /* 大きい数字を押した時：料金のボタンを隠して、同じ場所にテンキー */
 #calcSheet.padin .combo-row { display: none; }
-#calcBody .pad { flex: 1; min-height: 0; margin: 0 0 8px; display: flex; flex-direction: column; }
+#calcBody .pad { flex: none; margin: auto 20px; display: flex; flex-direction: column; } /* 周りに余白を取って、空いた所の真ん中に置く */
 #calcBody .pad > :not(.pad-keys) { display: none; } /* 打った数字はスカウターに出すので、テンキー側の表示と登録は出さない */
-#calcBody .pad-keys { flex: 1; grid-auto-rows: 1fr; }
-#calcBody .kbtn { height: auto; min-height: 0; }
+#calcBody .pad-keys { gap: 8px; }
+#calcBody .kbtn { height: 64px; font-size: 24px; } /* ボタンは少し横長に */
 
 /* テンキー */
 .pad { margin-top: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px; }
