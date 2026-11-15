@@ -1594,7 +1594,8 @@ const siteBig = document.getElementById('siteBig');
 bigSheet.addEventListener('touchstart', e => {
   // 計上の段が横にはみ出してスクロールできる時だけ、そこ（上下に少し余裕をもって）に置いた指では閉じない
   const x = e.touches[0].clientX, y = e.touches[0].clientY, r = siteBig.getBoundingClientRect();
-  const onPend = siteBig.scrollWidth > siteBig.clientWidth && y > r.top - 8 && y < r.bottom + 8 && x < r.right;
+  // 仮置きのタグに置いた指も除く（長押しで並び替える時に、現場送り・閉じるにならないように）
+  const onPend = e.target.closest('#siteBig .tag') || (siteBig.scrollWidth > siteBig.clientWidth && y > r.top - 8 && y < r.bottom + 8 && x < r.right);
   dragY = (onPend || (bigBody.contains(e.target) && bigBody.scrollTop > 0)) ? null : y;
   dragDy = 0;
   // 左右に払う：仮置きの横スクロールと、場所の欄に置いた指は除く
