@@ -176,6 +176,7 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 /* 大きい数字を押した時：料金のボタンを隠して、同じ場所にテンキー */
 #calcSheet.padin .combo-row { display: none; }
 #calcBody .pad { flex: 1; min-height: 0; margin: 0 0 8px; display: flex; flex-direction: column; }
+#calcBody .pad > :not(.pad-keys) { display: none; } /* 打った数字はスカウターに出すので、テンキー側の表示と登録は出さない */
 #calcBody .pad-keys { flex: 1; grid-auto-rows: 1fr; }
 #calcBody .kbtn { height: auto; min-height: 0; }
 
@@ -773,7 +774,7 @@ function render() {
   document.getElementById('dayTotal').innerHTML = goal
     ? `${goal - dayTotal / 100}p<small>/${goal}p</small>`
     : `${pt(dayTotal)}p<small>/--p</small>`; // 総量を打つ前：今日の合計／総量（まだ）
-  setAmount(pt(total));
+  setAmount(padIn() ? padVal : pt(total)); // テンキーで打っている間は、打った数字をここに出す
   document.getElementById('heroLabel').textContent = `${state.cur + 1}台目の容積ポイント`;
   // 件数はポイントを入れた回数。大物は数えない
   document.getElementById('heroCount').textContent = `${dai.pts.length}件`;
@@ -1309,6 +1310,7 @@ function setupPad() {
   renderPad();
 }
 function renderPad() {
+  if (padIn()) setAmount(padVal);
   const d = document.getElementById('padDisp');
   d.className = 'pad-disp' + (padVal ? '' : ' blank');
   d.innerHTML = padVal ? `${padVal}<small>p</small>` : '0<small>p</small>';
@@ -1366,20 +1368,32 @@ document.getElementById('padAdd').onclick = () => {
 };
 
 document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); };
-// 電卓の大きい数字を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字がそのままこの台の点数になる
-// 登録すると電卓ごと閉じる。もう一度数字を押すと料金のボタンに戻る
+// 電卓の大きい数字（スカウター）を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字はスカウターに直に入る
+// 閉じる（もう一度スカウターを押す・閉じる・✕・下に払う）と、打った数字がそのままこの台の点数になる。何も打たなければ変えない
 function padEl() { return document.querySelector('.pad'); }
 function padHome() { return document.querySelector('#padSheet .sheet-body'); }
+function padIn() { return document.getElementById('calcSheet').classList.contains('padin'); }
 function padBack() {
-  if (padEl().parentNode === padHome()) return;
+  if (!padIn()) return;
   padHome().appendChild(padEl());
   document.getElementById('calcSheet').classList.remove('padin');
+  const typed = padVal; padVal = '';
+  if (typed === '') { render(); return; }
+  const n = +typed;
+  if (n * 100 !== val(state.cur) || state.cur === autoDai() || linkOf() >= 0) {
+    const delta = n * 100 - sum(cur());
+    if (!linkOK(delta)) { render(); shakeNg(document.getElementById('heroAmount')); return; }
+    change(() => { linkMove(delta); cur().pts = n ? [n * 100] : []; });
+    buzz();
+  } else render();
 }
 document.getElementById('heroAmount').onclick = () => {
-  if (padEl().parentNode !== padHome()) { padBack(); return; }
+  if (padIn()) { padBack(); return; }
   padMode = 'dai'; editS = null; setupPad();
+  padVal = '';
   document.getElementById('calcBody').appendChild(padEl());
   document.getElementById('calcSheet').classList.add('padin');
+  renderPad();
 };
 document.getElementById('padRedo').onclick = () => { padMode = 'dai'; setupPad(); };
 document.getElementById('padToMove').onclick = e => {
