@@ -1108,6 +1108,14 @@ document.addEventListener('click', e => {
     const open = !pop.classList.contains('on');
     closeKindPops();
     pop.classList.toggle('on', open); b.classList.toggle('open', open);
+    // 窓の下が隠れる時は、全部見えるところまで画面をすっと上へ送る
+    if (open) {
+      const body = pop.closest('.sheet-body');
+      if (body) {
+        const over = pop.getBoundingClientRect().bottom + 12 - body.getBoundingClientRect().bottom;
+        if (over > 0) body.scrollBy({ top: over, behavior: 'smooth' });
+      }
+    }
     return;
   }
   if (b && b.dataset.pick != null) {
