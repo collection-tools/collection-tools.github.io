@@ -135,7 +135,6 @@ main { padding: 12px; max-width: 560px; margin: 0 auto; }
 /* 台の切り替え */
 /* 5台までは画面幅に5等分で並べる。6台目からは横にはみ出してスクロール */
 .dais { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 24px) / 5); gap: 6px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; }
-.bottom > .dais { display: grid; gap: 6px; max-width: 560px; margin: 0 auto 2px; }
 .dai-chip {
   border: 1px solid var(--border); background: var(--card); color: var(--text2);
   border-radius: 10px; padding: 6px 2px; font-size: 13px; cursor: pointer; font-family: inherit;
@@ -453,6 +452,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 </header>
 
 <main>
+  <div class="dais" id="dais"></div>
 
   <!-- この台の大物の一覧（現場ごとに1行）。行を押すとその現場を直す -->
   <section class="tab" id="listTab">
@@ -463,8 +463,6 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 </main>
 
 <div class="bottom">
-  <!-- 台の切り替えは指の届く下に。その下に「1つ戻す」「クリア」 -->
-  <div class="dais" id="dais"></div>
   <div>
   <button class="bbtn undo" id="undo">1つ戻す</button>
   <button class="bbtn reset-all" id="resetAll">クリア</button>
