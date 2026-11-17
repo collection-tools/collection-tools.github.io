@@ -454,13 +454,13 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 .srow.gone { overflow: hidden; pointer-events: none; opacity: 0; transition: height .22s ease, min-height .22s ease, margin .22s ease, opacity .15s ease, border-width .22s ease; }
 .splace { flex: none; align-self: center; min-width: 52px; max-width: 120px; height: 28px; margin-right: 8px; padding: 0 10px; border: none; border-radius: 999px; background: var(--card2); color: var(--text2); font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .shou { flex: 1; min-width: 0; padding: 10px 12px; font-size: 15px; font-weight: 700; line-height: 1.5; }
-/* 確かめる画面（全てリセット）。OKを真ん中に大きく、キャンセルはその下 */
-.ask { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); padding: 16px; }
+/* 確かめる画面（全てリセット）。見た目はiPhone標準の確認に寄せて、OKだけ真ん中に大きく。キャンセルはその下 */
+.ask { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); padding: 24px; }
 .ask.on { display: flex; }
-.ask-box { width: min(100%, 420px); background: var(--bg); border-radius: 20px; padding: 24px 20px 16px; text-align: center; }
-.ask-msg { font-size: 16px; line-height: 1.6; margin-bottom: 20px; white-space: pre-line; } /* 改行は文の切れ目で入れる（「す。」だけ落ちないように） */
-.ask-ok { display: block; width: 100%; height: 64px; border: none; border-radius: 14px; background: var(--red); color: #fff; font-size: 20px; font-weight: 700; }
-.ask-no { display: block; width: 100%; height: 48px; margin-top: 8px; border: none; background: none; color: var(--text2); font-size: 16px; }
+.ask-box { width: min(100%, 400px); background: #1c1c1e; color: #fff; border-radius: 28px; padding: 24px 24px 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.ask-msg { font-size: 17px; line-height: 1.5; margin-bottom: 20px; white-space: pre-line; } /* 改行は文の切れ目で入れる（「す。」だけ落ちないように） */
+.ask-ok { display: block; width: 100%; height: 56px; border: none; border-radius: 28px; background: rgba(255,255,255,0.1); color: #0a84ff; font-size: 19px; font-weight: 600; }
+.ask-no { display: block; width: 100%; height: 48px; margin-top: 4px; border: none; background: none; color: #0a84ff; font-size: 17px; }
 </style>
 </head>
 <body>
