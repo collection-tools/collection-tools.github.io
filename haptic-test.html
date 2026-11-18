@@ -5,6 +5,7 @@
 body{font:16px -apple-system,sans-serif;margin:16px;background:#fff;color:#111}
 button{display:block;width:100%;height:56px;margin:10px 0;font:inherit;font-size:17px;font-weight:700;border:1px solid #ccc;border-radius:12px;background:#f2f2f2}
 #log{margin-top:16px;color:#555;font-size:14px;white-space:pre-wrap}
+.ov{position:relative}.ov input{position:absolute;inset:0;width:100%;height:100%;opacity:.02;margin:0;appearance:auto}
 .vis{position:fixed;left:16px;bottom:16px}
 </style></head><body>
 <h3>触覚テスト</h3>
@@ -13,6 +14,7 @@ button{display:block;width:100%;height:56px;margin:10px 0;font:inherit;font-size
 <button id="b">B：画面内のスイッチをlabelでクリック</button>
 <button id="c">C：隠しスイッチを直接クリック</button>
 <button id="d">D：vibrate</button>
+<div class="ov"><button id="e" tabindex="-1">E：ボタンの上に透明スイッチを重ねる</button><input type="checkbox" switch id="ie"></div>
 <div id="log"></div>
 <label id="la" style="position:fixed;left:-100px;top:-100px;width:1px;height:1px;opacity:0;pointer-events:none"><input type="checkbox" switch id="ia" tabindex="-1"></label>
 <label id="lb" class="vis"><input type="checkbox" switch id="ib"> 見えるスイッチ</label>
@@ -23,5 +25,6 @@ log('vibrate: '+(navigator.vibrate?'あり':'なし')+' / standalone: '+(navigat
 a.onclick=()=>{la.click();log('A 実行')};
 b.onclick=()=>{lb.click();log('B 実行')};
 c.onclick=()=>{ic.click();log('C 実行')};
+ie.onchange=()=>log('E 押した');
 d.onclick=()=>{try{log('D '+(navigator.vibrate?navigator.vibrate(30):'なし'))}catch(e){log('D エラー')}};
 </script></body></html>
