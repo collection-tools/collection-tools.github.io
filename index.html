@@ -1796,7 +1796,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && state.date !== today()) { state.date = today(); history = []; save(); render(); }
 });
 
-// 台を切りかえる。中身は、進む時は右から、戻る時は左から滑りこんでくる
+// 台を切りかえる。現場の行は、進む時は右から、戻る時は左から滑りこんでくる（「大物：〇箇所」「略/詳」と下の電卓・＋は動かさない）
 function switchDai(to, wrapDir) {
   if (to < 0 || to >= state.dais.length || to === state.cur) return;
   const dir = wrapDir || (to > state.cur ? 1 : -1);
@@ -1804,7 +1804,7 @@ function switchDai(to, wrapDir) {
   state.cur = to;
   save(); render();
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
-    document.getElementById('listTab').animate(
+    document.getElementById('bigList').animate(
       [{ transform: `translateX(${dir * 70}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
       { duration: 220, easing: 'cubic-bezier(.2,.8,.3,1)' });
 }
