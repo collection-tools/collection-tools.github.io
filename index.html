@@ -1020,7 +1020,20 @@ function buildButtons() {
 }
 
 // ===== 操作 =====
-function buzz() { if (navigator.vibrate) navigator.vibrate(15); }
+// 触覚：Androidは vibrate。iPhoneは vibrate が無いので、見えないスイッチを切り替えて（iOS 17.4以降）カチッと鳴らす
+const hapticSwitch = (() => {
+  const l = document.createElement('label');
+  l.setAttribute('aria-hidden', 'true');
+  l.style.cssText = 'position:fixed;left:-100px;top:-100px;width:1px;height:1px;opacity:0;pointer-events:none';
+  const i = document.createElement('input');
+  i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
+  l.appendChild(i); document.body.appendChild(l);
+  return l;
+})();
+function buzz() {
+  if (navigator.vibrate) { navigator.vibrate(15); return; }
+  try { hapticSwitch.click(); } catch (e) {}
+}
 
 // 変える時はいつもここを通す（1つ戻すのため）
 function change(fn) {
