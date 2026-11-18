@@ -454,6 +454,8 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 .list-top { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 8px; }
 .list-top h2 { margin: 0; }
 #bigList { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* 大物の＋の上：今の台の金額登録（電卓）を開く。今の台のチップをもう一度押すのと同じ */
+.calc-open { flex: none; display: flex; align-items: center; justify-content: center; margin: 10px auto 0; width: 52px; height: 52px; border-radius: 50%; border: none; background: var(--card2); color: var(--text2); cursor: pointer; }
 .add-big { flex: none; display: block; margin: 10px auto 2px; width: 50%; height: 54px; border-radius: 12px; border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 30px; font-weight: 700; cursor: pointer; }
 /* 現場の行：右端に現場ごと消す✕（いつも出ている）。行を長押しするとつかめて、指についてくる */
 .srow { position: relative; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -492,6 +494,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
   <section class="tab" id="listTab">
     <div class="list-top"><h2 id="listTitle"></h2><button class="view-btn" id="viewBtn" aria-label="略と詳を切り替える"></button></div>
     <div id="bigList"></div>
+    <button class="calc-open" id="calcOpen" aria-label="金額登録"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><rect x="8" y="5.5" width="8" height="4" rx="1"/><circle cx="9" cy="13" r=".6" fill="currentColor"/><circle cx="12" cy="13" r=".6" fill="currentColor"/><circle cx="15" cy="13" r=".6" fill="currentColor"/><circle cx="9" cy="17" r=".6" fill="currentColor"/><circle cx="12" cy="17" r=".6" fill="currentColor"/><circle cx="15" cy="17" r=".6" fill="currentColor"/></svg></button>
     <button class="add-big" data-open="bigSheet" aria-label="大物を足す">＋</button>
   </section>
 </main>
@@ -1465,6 +1468,7 @@ document.getElementById('undo').onclick = () => {
 };
 
 // 電卓の画面のボタン：1つ戻す（下のと同じ）／この台の金額を空にする（大物は残す。押し間違えたら1つ戻す）
+document.getElementById('calcOpen').onclick = () => openPanel('calcSheet');
 document.getElementById('calcUndo').onclick = () => document.getElementById('undo').click();
 document.getElementById('calcReset').onclick = () => {
   if (!cur().pts.length) return;
