@@ -971,13 +971,15 @@ function bigLabel(e) {
   return (yenv ? `${yenv.toLocaleString('ja-JP')}円${name}` : name) + KAI(e);
 }
 
-let shownAmount = null, amountTimer;
+let shownAmount = null, amountTimer, amountAnimUntil = 0;
 // 3桁ぶんの場所を最初から取っておく（空いた桁は見えない0で埋める）。桁が増えても「p」が横に動かない
 const AMOUNT_W = 3;
 function setAmount(str) {
   const el = document.getElementById('heroAmount');
   const ch = c => c === ' ' ? '<i class="ph">0</i>' : c;
   const still = t => [...t.padStart(AMOUNT_W, ' ')].map(c => `<span class="dg">${ch(c)}</span>`).join('') + '<small>p</small>';
+  // 降りてくる途中に同じ数字でもう一度描き直しが来ても（共有の書き込みの折り返しなど）、動きを消さない
+  if (shownAmount === str && Date.now() < amountAnimUntil) return;
   if (shownAmount === null || shownAmount === str) { shownAmount = str; el.innerHTML = still(str); return; }
   // 右から桁をそろえて、変わった桁だけ上から降りてくる
   const len = Math.max(AMOUNT_W, str.length, shownAmount.length);
@@ -988,6 +990,7 @@ function setAmount(str) {
   ).join('') + '<small>p</small>';
   shownAmount = str;
   clearTimeout(amountTimer);
+  amountAnimUntil = Date.now() + 320;
   amountTimer = setTimeout(() => { el.innerHTML = still(str); }, 320); // 落ちきったら普通の数字に戻す
 }
 
