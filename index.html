@@ -1027,9 +1027,10 @@ function buildButtons() {
 // 触覚：Androidは vibrate。iPhoneはコードから振動させられない（iOS 26で確認）ので、
 // 主なボタンの上に透明なスイッチを重ねる。指で本物のスイッチに触れた時だけカチッと鳴る。
 // スイッチはボタンの子なので、押した時のクリックはボタンにもそのまま届く
-// 大物登録の中は左右に払う操作があるので重ねない（スイッチが横の動きを取ってしまうため）
+// 大物登録の中は左右に払う操作があるので重ねない（スイッチが横の動きを取ってしまうため）。
+// 金額のボタンとテンキーにも重ねない（重ねると、スカウターの数字が降りてくる動きが消えた）
 function buzz() { if (navigator.vibrate) navigator.vibrate(15); }
-const HAPTIC_SEL = '#calcSheet .pbtn, .kbtn, .dai-chip, .add-big, .calc-open, .bbtn, .ok, .head-rest, .room-btn';
+const HAPTIC_SEL = '.dai-chip, .add-big, .calc-open, .bbtn, .ok, .head-rest, .room-btn';
 function addHaptic(el) {
   if (el.querySelector(':scope > .hsw')) return;
   if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
