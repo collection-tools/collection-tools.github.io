@@ -62,7 +62,7 @@ header {
 .head-reset { flex: none; border: 1px solid var(--red); border-radius: 8px; background: transparent; color: var(--red); font: inherit; font-size: 12px; font-weight: 700; padding: 1px 8px; cursor: pointer; }
 .head-day { text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; }
 .head-day b { display: block; font-size: 17px; color: var(--text); }
-/* 右上：総量を打つ前は「今日の総量 --p」（電卓で足しても動かない）、打ったあとは「残り479p/1070p」（総量−今日の合計／総量）。押すと総量を打つ */
+/* 右上：見出しは「残り/総量」。総量を打つ前は「--p/--p」（電卓で足しても動かない）、打ったあとは「479p/1070p」（総量−今日の合計／総量）。押すと総量を打つ */
 .head-rest { border: 1px solid var(--border); border-radius: 10px; background: var(--card); padding: 4px 10px; font: inherit; text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; cursor: pointer; }
 .head-rest b { display: block; font-size: 17px; color: var(--text); }
 .head-rest b small { font-size: 13px; color: var(--text2); font-weight: 600; }
@@ -817,12 +817,12 @@ function render() {
   { const d = new Date(); document.getElementById('headDate').textContent = `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})`; }
   { const b = document.getElementById('roomBtn'); b.textContent = room ? '共有中' : 'ローカル'; b.className = 'room-btn' + (room ? ' shared' : '') + (room && !online ? ' off' : ''); }
   if (document.getElementById('roomSheet').classList.contains('on')) renderRooms();
-  // 総量を打ったら「残り479p/1070p」。今日の合計そのものは出さない
+  // 総量を打ったら「479p/1070p」（見出しは残り/総量）。今日の合計そのものは出さない
   const goal = state.goal || 0;
-  document.getElementById('restLabel').textContent = goal ? '残り' : '今日の総量';
+  document.getElementById('restLabel').textContent = '残り/総量';
   document.getElementById('dayTotal').innerHTML = goal
     ? `${goal - dayTotal / 100}p<small>/${goal}p</small>`
-    : `--p`; // 総量を打つ前は、電卓で足しても動かさない
+    : `--p<small>/--p</small>`; // 総量を打つ前は、電卓で足しても動かさない
   setAmount(padIn() ? padVal : pt(total)); // テンキーで打っている間は、打った数字をここに出す
   document.getElementById('heroLabel').textContent = `${state.cur + 1}台目の容積ポイント`;
   // 件数はポイントを入れた回数。大物は数えない
