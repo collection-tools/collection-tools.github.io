@@ -57,7 +57,7 @@ header {
 /* 「1台目 クリア」を1列に。クリアは全ての台を消す */
 .head-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 /* 「1台目 11/16(月) 共有」。右上が広がって入り切らない時は、日付のほうを詰める */
-#headTitle, #headShared { flex: none; }
+#headTitle { flex: none; }
 #headDate { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .head-reset { flex: none; border: 1px solid var(--red); border-radius: 8px; background: transparent; color: var(--red); font: inherit; font-size: 12px; font-weight: 700; padding: 1px 8px; cursor: pointer; }
 .head-day { text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; }
@@ -307,8 +307,22 @@ body.lock { overflow: hidden; }
 .share button.sub { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
 .share-on { font-size: 15px; font-weight: 700; flex: 1; }
 .share-on small { display: block; font-size: 12px; font-weight: 600; color: var(--text2); }
-.head-title .shared { font-size: 11px; font-weight: 700; color: var(--on-accent); background: var(--accent); border-radius: 6px; padding: 1px 5px; vertical-align: 2px; }
-.head-title .shared.off { background: var(--text2); }
+/* 日付の右：いまいる場所。「ローカル」か「共有中」。押すと場所を選ぶ画面 */
+.room-btn { flex: none; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text2); font: inherit; font-size: 12px; font-weight: 700; padding: 2px 8px; cursor: pointer; }
+.room-btn.shared { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.room-btn.shared.off { background: var(--text2); border-color: var(--text2); }
+/* 場所を選ぶ画面：いまいる所を一番上に大きく濃く、ほかは下に並べる */
+.room-now { border-radius: 14px; background: var(--accent); color: var(--on-accent); padding: 14px 16px; margin-bottom: 14px; }
+.room-now small { display: block; font-size: 12px; font-weight: 600; opacity: .7; }
+.room-now b { display: block; font-size: 22px; margin-top: 2px; word-break: break-all; }
+.room-list { display: flex; flex-direction: column; gap: 8px; }
+.room-row { display: flex; gap: 8px; }
+.room-go { flex: 1; min-width: 0; height: 50px; padding: 0 14px; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-go small { font-size: 12px; font-weight: 600; color: var(--text2); margin-left: 6px; }
+.room-del { flex: none; width: 50px; height: 50px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text2); font-size: 16px; cursor: pointer; }
+.room-new { display: flex; gap: 8px; margin-top: 14px; }
+.room-new input { flex: 1; min-width: 0; height: 50px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); font: inherit; font-size: 16px; color: var(--text); -webkit-user-select: text; user-select: text; }
+.room-new button { flex: none; height: 50px; padding: 0 18px; border: none; border-radius: 12px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
 /* 料金表は3ページを横スワイプで送る。前後に写しを置いて、端まで行ったら黙って入れ替える */
 .pager { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .pager::-webkit-scrollbar { display: none; }
@@ -467,7 +481,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 
 <header>
   <button class="burger" id="burger" aria-label="料金表">☰</button>
-  <div class="head-title"><span id="headTitle"></span><span id="headDate"></span><span id="headShared"></span></div>
+  <div class="head-title"><span id="headTitle"></span><span id="headDate"></span><button class="room-btn" id="roomBtn" aria-label="場所を選ぶ"></button></div>
   <button class="head-rest" id="restBtn" aria-label="今日の総量を打つ"><span id="restLabel"></span><b id="dayTotal"></b></button>
 </header>
 
@@ -494,7 +508,6 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
     <h1>料金表</h1>
     <button class="burger" data-close aria-label="閉じる">✕</button>
   </div>
-  <div class="share" id="share"></div>
   <div class="pager" id="pager"></div>
   <div class="pager-foot" id="pagerFoot"></div>
 </aside>
@@ -517,6 +530,16 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
   <div class="sheet-head"><h1>場所</h1><button class="burger" data-close aria-label="閉じる">✕</button></div>
   <div class="sheet-body">
     <div class="place-row"><input id="placeIn" type="text" autocomplete="off" enterkeyhint="done"><button class="ok" id="placeOk">登録</button></div>
+  </div>
+</div>
+
+<!-- 場所を選ぶ画面。ローカル（この端末だけ）と、共有コードごとの場所。中身は場所ごとに別々に残る -->
+<div class="sheet center" id="roomSheet">
+  <div class="sheet-head"><h1>場所</h1><button class="burger" data-close aria-label="閉じる">✕</button></div>
+  <div class="sheet-body">
+    <div class="room-now" id="roomNow"></div>
+    <div class="room-list" id="roomList"></div>
+    <div class="room-new"><input id="roomIn" type="text" placeholder="別の共有コード" autocomplete="off" autocapitalize="off" enterkeyhint="go"><button id="roomGo">移る</button></div>
   </div>
 </div>
 
@@ -699,15 +722,19 @@ function fromV1() {
   });
   return st;
 }
+// 中身は場所ごとに別々にしまう。ローカルは KEY、共有は「KEY:共有コード」（クラウドの写し）
+const roomKey = () => room ? KEY + ':' + room : KEY;
 function load() {
-  try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
-  if (!state || !Array.isArray(state.dais)) state = fromV1() || newDay();
+  try { state = JSON.parse(localStorage.getItem(roomKey())); } catch (e) { state = null; }
+  // 共有の写しは1日ごと（クラウドも日付ごと）。前の日の写しは持ち越さない
+  if (room && state && state.date !== today()) state = null;
+  if (!state || !Array.isArray(state.dais)) state = (!room && fromV1()) || newDay();
   // 日付が変わっても中身は残す（消すのは「全てリセット」だけ）。日付だけ今日に送る
   if (state.date !== today()) state.date = today();
   while (state.dais.length < DAIS) state.dais.push(newDai());
 }
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  try { localStorage.setItem(roomKey(), JSON.stringify(state)); } catch (e) {}
 }
 
 // rows: [3, 2] のように行ごとの個数を決めた品目は、12列を各行の個数で割って、どの行も横幅いっぱいにする
@@ -781,8 +808,8 @@ function render() {
   document.getElementById('headTitle').innerHTML =
     `<b>${daime(state.cur)}</b>`;
   { const d = new Date(); document.getElementById('headDate').textContent = `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})`; }
-  document.getElementById('headShared').innerHTML = room ? `<span class="shared${online ? '' : ' off'}">共有</span>` : '';
-  renderShare();
+  { const b = document.getElementById('roomBtn'); b.textContent = room ? '共有中' : 'ローカル'; b.className = 'room-btn' + (room ? ' shared' : '') + (room && !online ? ' off' : ''); }
+  if (document.getElementById('roomSheet').classList.contains('on')) renderRooms();
   // 総量を打ったら「残り479p/1070p」。今日の合計そのものは出さない
   const goal = state.goal || 0;
   document.getElementById('restLabel').textContent = goal ? '残り' : '今日の合計';
@@ -1885,35 +1912,52 @@ async function subscribe() {
 // 日付が変わったら、新しい日の文書を見に行く
 setInterval(() => { if (room && subDate && subDate !== today()) { if (state.date !== today()) { state.date = today(); history = []; save(); } subscribe(); } }, 60000);
 
-function renderShare() {
-  const el = document.getElementById('share');
-  if (room) {
-    if (el.dataset.mode === 'on' && el.dataset.room === room) {
-      el.querySelector('small').textContent = online ? '' : 'オフライン（復帰後に送信）';
-      return;
-    }
-    el.dataset.mode = 'on'; el.dataset.room = room;
-    el.innerHTML = `<div class="share-on">共有中：${room.replace(/[<>&"]/g, '')}<small></small></div><button class="sub" id="shareOff">解除</button>`;
-    renderShare();
-  } else if (el.dataset.mode !== 'off') {
-    el.dataset.mode = 'off';
-    el.innerHTML = `<input id="shareIn" type="text" placeholder="共有コード" autocomplete="off" autocapitalize="off"><button id="shareGo">参加</button>`;
-  }
+// ===== 場所を選ぶ =====
+// この端末で使った共有コード。新しく使ったものほど前
+let rooms = [];
+try { rooms = JSON.parse(localStorage.getItem('shuushuu3-rooms')) || []; } catch (e) {}
+if (room && !rooms.includes(room)) rooms.unshift(room);
+const saveRooms = () => { try { localStorage.setItem('shuushuu3-rooms', JSON.stringify(rooms)); } catch (e) {} };
+function renderRooms() {
+  document.getElementById('roomNow').innerHTML = room
+    ? `<small>いまいる場所・共有中${online ? '' : '（オフライン。つながったら送る）'}</small><b>${esc(room)}</b>`
+    : '<small>いまいる場所</small><b>ローカル</b>';
+  const others = (room ? [''] : []).concat(rooms.filter(r => r !== room));
+  document.getElementById('roomList').innerHTML = others.map(r => r
+    ? `<div class="room-row"><button class="room-go" data-room="${esc(r)}">${esc(r)}<small>共有</small></button><button class="room-del" data-del="${esc(r)}" aria-label="一覧から消す">✕</button></div>`
+    : '<div class="room-row"><button class="room-go" data-room="">ローカル<small>この端末だけ</small></button></div>').join('');
 }
-document.getElementById('share').addEventListener('click', e => {
-  if (e.target.id === 'shareGo') {
-    const v = document.getElementById('shareIn').value.trim();
-    if (v.length < 2 || /[\/]/.test(v)) { shakeNg(e.target); return; } // 2文字以上。「/」は使えない
-    room = v;
-    try { localStorage.setItem('shuushuu3-room', room); } catch (err) {}
-    subscribe(); buzz();
-  } else if (e.target.id === 'shareOff') {
-    // やめても、この端末の分は残る（ここから先は自分だけ）
-    room = '';
-    try { localStorage.removeItem('shuushuu3-room'); } catch (err) {}
-    subscribe(); buzz();
+// 場所を移る。いまの場所の中身はそのまま残して、移った先の中身を出す。1つ戻すは移った先では使わない
+function goRoom(r) {
+  if (r === room) { closeAll(); return; }
+  save();
+  room = r;
+  try { r ? localStorage.setItem('shuushuu3-room', r) : localStorage.removeItem('shuushuu3-room'); } catch (e) {}
+  if (r) { rooms = [r].concat(rooms.filter(x => x !== r)); saveRooms(); }
+  const c = state.cur;
+  load(); state.cur = Math.min(c, state.dais.length - 1);
+  history = []; shownAmount = null;
+  closeAll(); subscribe(); buzz();
+}
+document.getElementById('roomBtn').onclick = () => { renderRooms(); document.getElementById('roomIn').value = ''; openPanel('roomSheet'); };
+document.getElementById('roomList').addEventListener('click', e => {
+  const go = e.target.closest('[data-room]'), del = e.target.closest('[data-del]');
+  if (go) goRoom(go.dataset.room);
+  else if (del) {
+    // 一覧から外すだけ（クラウドの中身は消えない。同じコードを打てばまた入れる）
+    const r = del.dataset.del;
+    rooms = rooms.filter(x => x !== r); saveRooms();
+    try { localStorage.removeItem(KEY + ':' + r); } catch (err) {}
+    renderRooms();
   }
 });
+function roomNew() {
+  const inp = document.getElementById('roomIn'), v = inp.value.trim();
+  if (v.length < 2 || /[\/]/.test(v)) { shakeNg(document.getElementById('roomGo')); return; } // 2文字以上。「/」は使えない
+  inp.blur(); goRoom(v);
+}
+document.getElementById('roomGo').onclick = roomNew;
+document.getElementById('roomIn').addEventListener('keydown', e => { if (e.key === 'Enter') roomNew(); });
 
 load();
 buildButtons();
