@@ -432,7 +432,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 .big-foot { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px calc(18px + 1.5 * env(safe-area-inset-bottom)); /* 一覧・電卓の下と同じ高さ */ border-top: 1px solid var(--border); background: var(--bg); }
 .big-foot.two { display: flex; gap: 8px; }
 .foot-row { display: flex; gap: 8px; align-items: stretch; }
-.big-foot .foot-row .ok { flex: none; width: auto; min-width: 84px; height: 50px; padding: 0 20px; }
+.big-foot .foot-btns .ok { flex: 1; width: auto; height: 50px; }
 .big-foot .ok { flex: 1; width: 100%; height: 54px; border: none; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; }
 .big-foot .ok:disabled { background: var(--card2); color: var(--text2); opacity: .5; cursor: default; }
 .big-foot .ok.sub { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
@@ -581,7 +581,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
     <div id="groups"></div>
   </div>
   <!-- 仮置きと場所は、指が届く下にまとめる。左右に払うと前の現場・次の現場、下に払うと閉じる -->
-  <div class="big-foot"><div class="hero-big" id="siteBig"></div><div class="foot-row"><input id="bigPlace" type="text" autocomplete="off" enterkeyhint="done" placeholder="場所" aria-label="場所"><button class="ok" id="bigDone">閉じる</button></div></div>
+  <div class="big-foot"><div class="hero-big" id="siteBig"></div><div class="foot-row"><input id="bigPlace" type="text" autocomplete="off" enterkeyhint="done" placeholder="場所" aria-label="場所"></div><div class="foot-row foot-btns"><button class="ok" id="bigNext">次</button><button class="ok sub" id="bigDone">閉じる</button></div></div>
 </div>
 
 
@@ -865,11 +865,8 @@ function render() {
   // 固定：押すと文字がグレーになって書き換えられず、「〇台目の大物」の右に一覧と同じラベルが出る
   const locked = placeLocked();
   bp.readOnly = locked;
-  // 仮置きがある時だけ「次」（閉じずに次の現場へ）。無い時・直している時は「閉じる」
-  const nextMode = editS == null && cur().bigs.some(b => b.s === targetS());
-  const bd = document.getElementById('bigDone');
-  bd.textContent = nextMode ? '次' : '閉じる';
-  bd.classList.toggle('sub', !nextMode); // 閉じるはグレー、次はアクセント色
+  // 「次」と「閉じる」は並べて出す。次は、仮置きがある時だけ押せる（閉じずに次の現場へ）
+  document.getElementById('bigNext').disabled = !(editS == null && cur().bigs.some(b => b.s === targetS()));
   const lbl = document.getElementById('bigPlaceLbl'), lt = bp.value.trim();
   lbl.hidden = !(locked && lt); lbl.textContent = lt;
   // まだ何も登録していない現場は「新規」（大物登録の中だけ。一覧には出さない）
@@ -1094,10 +1091,12 @@ document.getElementById('placeOk').onclick = savePlace;
 const lockMem = new Set();
 const placeKey = () => state.cur + '-' + targetS() + '-' + (editS != null);
 const placeLocked = () => lockMem.has(placeKey()) || cur().bigs.some(x => x.s === targetS() && x.plock);
-// 大物登録の「次」／「閉じる」（仮置きが無ければ閉じる）：閉じずに、登録の段だけ空にして次の現場へ（箱物の種類も選び直し）
-document.getElementById('bigDone').onclick = () => {
+// 大物登録の「閉じる」
+document.getElementById('bigDone').onclick = () => { document.getElementById('bigPlace').blur(); saveBigPlace(); closeAll(); };
+// 大物登録の「次」：閉じずに、登録の段だけ空にして次の現場へ（箱物の種類も選び直し）
+document.getElementById('bigNext').onclick = () => {
   const d = cur();
-  if (editS != null || !d.bigs.some(b => b.s === d.next)) { document.getElementById('bigPlace').blur(); saveBigPlace(); closeAll(); return; }
+  if (editS != null || !d.bigs.some(b => b.s === d.next)) return;
   document.getElementById('bigPlace').blur(); saveBigPlace();
   change(() => { d.next++; });
   slideSite(1);
