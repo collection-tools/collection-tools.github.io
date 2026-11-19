@@ -1512,13 +1512,15 @@ document.getElementById('resetAll').onclick = () => {
   });
 };
 // 標準のconfirmはOKが右端で押しにくいので、自前で出す。周りを押してもキャンセル
-function ask(msg, onOk) {
+function ask(msg, onOk, okText = 'OK', noText = 'キャンセル', strict = false) {
   const el = document.getElementById('ask');
   document.getElementById('askMsg').textContent = msg;
+  document.getElementById('askOk').textContent = okText;
+  document.getElementById('askNo').textContent = noText;
   const done = ok => { el.classList.remove('on'); el.onclick = null; if (ok) onOk(); };
   document.getElementById('askOk').onclick = e => { e.stopPropagation(); done(true); };
   document.getElementById('askNo').onclick = e => { e.stopPropagation(); done(false); };
-  el.onclick = e => { if (e.target === el) done(false); };
+  el.onclick = e => { if (e.target === el && !strict) done(false); };
   el.classList.add('on');
 }
 
@@ -1935,9 +1937,12 @@ async function subscribe() {
     if (!snap.exists()) {
       // まだ誰も打っていない日：この端末の分があれば、それを最初の中身にする
       if (first && (state.goal || state.dais.some(d => d.pts.length || d.bigs.length))) fs.setDoc(dayRef(), toDoc(state)).catch(() => {});
+    } else if (first && carry) {
+      fs.setDoc(dayRef(), toDoc(state)).catch(() => {}); // ローカルから持ってきた分で、共有側の今日の分を置きかえる
     } else {
       fromDoc(snap.data()); save();
     }
+    if (first) carry = false;
     first = false;
     render();
   }, () => { online = false; render(); });
@@ -1962,14 +1967,37 @@ function renderRooms() {
     : '<div class="room-row"><button class="room-go" data-room="">ローカル<small>この端末だけ</small></button></div>').join('');
 }
 // 場所を移る。いまの場所の中身はそのまま残して、移った先の中身を出す。1つ戻すは移った先では使わない
+const hasContent = st => !!(st.goal || st.dais.some(d => d.pts.length || d.bigs.length));
+const hasPlace = st => st.dais.some(d => d.bigs.some(b => b.place));
+let carry = false; // ローカルから持ってきた中身を、共有側の今日の分に上書きで入れる（最初の1回だけ）
 function goRoom(r) {
   if (r === room) { closeAll(); return; }
+  // ローカルから共有へ移る時、いまの中身があれば「持っていく？」と聞く。持っていくなら共有側の今日の分は上書きされる
+  if (r && !room && hasContent(state)) {
+    const from = JSON.parse(JSON.stringify(state));
+    ask(`いまのローカルの台と総量を、「${r}」に持っていく？\n共有側に今日の分があれば、上書きされて消える。`, () => {
+      if (!hasPlace(from)) { moveRoom(r, from); return; }
+      // 場所の名前はクラウドに乗ると消せない。周りを押しても閉じない（どちらかを選ぶまで進まない）
+      ask('場所の欄に書いた名前は、クラウドに乗ると消せない。', () => {
+        from.dais.forEach(d => d.bigs.forEach(b => { delete b.place; delete b.plock; }));
+        moveRoom(r, from);
+      }, '場所を消して持っていく', 'そのまま持っていく', true);
+      document.getElementById('askNo').onclick = e => { e.stopPropagation(); document.getElementById('ask').classList.remove('on'); moveRoom(r, from); };
+    }, '持っていく', '持っていかない');
+    document.getElementById('askNo').onclick = e => { e.stopPropagation(); document.getElementById('ask').classList.remove('on'); moveRoom(r); };
+    return;
+  }
+  moveRoom(r);
+}
+function moveRoom(r, bring) {
   save();
   room = r;
   try { r ? localStorage.setItem('shuushuu3-room', r) : localStorage.removeItem('shuushuu3-room'); } catch (e) {}
   if (r) { rooms = [r].concat(rooms.filter(x => x !== r)); saveRooms(); }
   const c = state.cur;
   load(); state.cur = Math.min(c, state.dais.length - 1);
+  carry = !!bring;
+  if (bring) { state.dais = bring.dais; if (bring.goal) state.goal = bring.goal; else delete state.goal; while (state.dais.length < DAIS) state.dais.push(newDai()); state.cur = Math.min(c, state.dais.length - 1); save(); }
   history = []; shownAmount = null;
   closeAll(); subscribe(); buzz();
 }
