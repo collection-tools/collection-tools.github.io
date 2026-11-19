@@ -1803,6 +1803,7 @@ function switchDai(to, wrapDir) {
   if (to < 0 || to >= state.dais.length || to === state.cur) return;
   const dir = wrapDir || (to > state.cur ? 1 : -1);
   shownAmount = null; // 台を変える時は数字をパッと切り替える
+  if (subMode) { subMode = false; paintSub(); } // 「ひく」は、台をまたいで持ち越さない
   state.cur = to;
   save(); render();
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
