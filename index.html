@@ -462,11 +462,11 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 .list-top h2 { margin: 0; }
 #bigList { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 /* 大物の＋の上：今の台の金額登録（電卓）を開く。今の台のチップをもう一度押すのと同じ */
-.calc-open { position: absolute; z-index: 5; left: 50%; bottom: 66px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; border: none; background: var(--card2); color: var(--text2); box-shadow: 0 0 12px 8px var(--bg); cursor: pointer; }
+.calc-open { position: absolute; z-index: 5; left: 50%; bottom: 80px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; border: none; background: var(--card2); color: var(--text2); box-shadow: 0 0 12px 8px var(--bg); cursor: pointer; }
 /* 電卓と＋は浮かせて、現場の行がこの下に潜り込むようにする。一覧の下には2つの分だけ余白 */
 #listTab { position: relative; }
-#bigList { padding-bottom: 130px; }
-.add-big { position: absolute; z-index: 5; left: 25%; bottom: 2px; box-shadow: 0 0 14px 10px var(--bg); display: flex; align-items: center; justify-content: center; width: 50%; height: 54px; border-radius: 12px; border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 30px; font-weight: 700; cursor: pointer; }
+#bigList { padding-bottom: 144px; }
+.add-big { position: absolute; z-index: 5; left: 25%; bottom: 16px; box-shadow: 0 0 14px 10px var(--bg); display: flex; align-items: center; justify-content: center; width: 50%; height: 54px; border-radius: 12px; border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 30px; font-weight: 700; cursor: pointer; }
 /* 現場の行：右端に現場ごと消す✕（いつも出ている）。行を長押しするとつかめて、指についてくる */
 .srow { position: relative; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .srow .smove, .srow .sdel { flex: none; align-self: stretch; width: 44px; border: none; border-left: 1px solid var(--border); background: none; color: var(--text2); font: inherit; font-size: 18px; cursor: pointer; }
@@ -958,7 +958,10 @@ const toHalf = t => t.replace(/[ァ-ヶー]/g, c => {
   return plain[c] || c;
 });
 const halfIfLong = t => ((t.match(/[ァ-ヶー]/g) || []).length >= 5 ? toHalf(t) : t);
-function abbr(e) { return halfIfLong(abbr0(e)) + KAI(e); }
+function abbr(e) {
+  if (e.ko) return '（自）' + (e.kai ? '（解）' : ''); // 子供用の自転車は900円と同じ丸かっこ
+  return halfIfLong(abbr0(e)) + KAI(e);
+}
 function abbr0(e) {
   if (BY_COND[e.name] && BY_COND[e.name][e.cond]) return BY_COND[e.name][e.cond];
   let yen = 0;
