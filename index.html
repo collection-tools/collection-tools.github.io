@@ -1670,6 +1670,12 @@ function closeAll() {
   document.querySelectorAll('.kind').forEach(el => setKind(el, '')); // 箱物の種類も毎回選び直す
   document.querySelectorAll('.free').forEach(el => { el.value = ''; el.blur(); });
   closeKindPops();
+  // 大物登録を閉じたら、いまの現場は確定。次に開いた時は新しい現場から（登録が1つも無い現場は、そのまま残す。直す時は進めない）
+  if (document.getElementById('bigSheet').classList.contains('on') && editS == null) {
+    document.getElementById('bigPlace').blur(); saveBigPlace(); // 場所は、現場が進む前に付ける
+    const d = cur();
+    if (d.bigs.some(b => b.s === d.next)) change(() => { d.next++; });
+  }
   { const d = cur(), m = d.bigs.reduce((x, b) => Math.max(x, b.s), -1); if (d.next < m) change(() => { d.next = m; }); }
   render();
   document.querySelectorAll('.drawer.on, .sheet.on').forEach(el => el.classList.remove('on'));
