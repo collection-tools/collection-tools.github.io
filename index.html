@@ -646,7 +646,7 @@ const GROUPS = [
         { price: 900,  cond: '100以上' },
         { price: 1300, cond: '150以上' },
       ]},
-      { name: '自転車', short: '自転車', tiers: [
+      { name: '自転車', short: '自転車', ko: true, tiers: [
         { price: 900,  cond: '18インチ以上', btn: '18インチ以上' },
         { price: 1300, cond: '電動', btn: '電動自転車', label: '電動自転車' },
       ]},
@@ -892,11 +892,11 @@ function render() {
     el.classList.toggle('has', n > 0);
     el.dataset.n = n ? `×${n}` : '';
   });
-  // 解体済のボタン：いまの現場で最後に登録した箱物が解体済なら黒く
+  // 解体済・子供用のボタン：いまの現場で最後に登録したその品目に印が付いていれば黒く
   document.querySelectorAll('[data-kai]').forEach(el => {
     const [gi, ii] = el.dataset.kai.split('-').map(Number);
     const last = now.findLast(e => e.name === GROUPS[gi].items[ii].name);
-    el.classList.toggle('on', !!(last && last.kai));
+    el.classList.toggle('on', !!(last && last[el.dataset.flag || 'kai']));
   });
 }
 
@@ -946,7 +946,7 @@ const ABBR = {
 };
 // 机・自転車・ソファーベッドは例外：机は袖なし＝つ・片袖＝片袖・両袖＝両袖、自転車はふつう＝自・電動＝電、ソファーベッド＝ソベ、折り畳みベッド＝折
 const BY_COND = { '机': { '袖なし': 'つ', '片袖': '片袖', '両袖': '両袖', '製図机': '製', 'PC机': 'PC机' }, '自転車': { '18インチ以上': '自', '電動': '電' }, 'ソファー': { 'ソファーベッド': 'ソベ' }, 'リクライニングソファ': { '一人用': '電そ', '二人用': '電ソ' }, 'ベッド': { '折り畳み': '折', 'ベビー': 'ﾍﾞﾍﾞ' } };
-const KAI = e => e.kai ? '（解）' : ''; // 解体済の印
+const KAI = e => (e.kai ? '（解）' : '') + (e.ko ? '（子）' : ''); // 解体済・子供用の印
 // カタカナが5文字以上の略は、半角にする（ガ→ｶﾞ、ー→ｰ）
 const toHalf = t => t.replace(/[ァ-ヶー]/g, c => {
   if (c === 'ー') return 'ｰ';
@@ -1017,7 +1017,7 @@ function buildButtons() {
   document.getElementById('groups').innerHTML = GROUPS.map((g, gi) =>
     `<section>${g.items.map((it, ii) =>
       `<div class="item${it.fold ? ' fold' : ''}">
-        ${it.title === '' ? '' : `<div class="item-name"><span>${it.fold ? `<button class="fold-btn" data-fold aria-expanded="false">${it.title}</button>` : it.title || it.name}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}${it.kai ? `<button class="kai" data-kai="${gi}-${ii}">解体済</button>` : ''}</span></div>`}
+        ${it.title === '' ? '' : `<div class="item-name"><span>${it.fold ? `<button class="fold-btn" data-fold aria-expanded="false">${it.title}</button>` : it.title || it.name}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}${it.kai ? `<button class="kai" data-kai="${gi}-${ii}">解体済</button>` : ''}${it.ko ? `<button class="kai" data-kai="${gi}-${ii}" data-flag="ko">子供用</button>` : ''}</span></div>`}
         ${it.free ? `<input class="free" data-free="${gi}-${ii}" type="text" placeholder="${it.kinds ? '種類に無い時は、品目の名前' : '品目の名前'}" autocomplete="off">` : ''}
         ${it.kinds && it.fold ? `<div class="kind-pop inline" data-pop="${gi}-${ii}">${it.kinds.map(k =>
           `<button data-pick="${k}">${k}</button>`).join('')}</div>` : it.kinds ? `<div class="kind-pop" data-pop="${gi}-${ii}">${['', ...it.kinds].map(k =>
@@ -1248,11 +1248,12 @@ document.addEventListener('click', e => {
     change(() => { const L = cur().bigs; L.push(nb); if (pv) L.forEach(x => { if (x.s === nb.s) x.place = pv; if (lk && x.s === nb.s) x.plock = true; }); });
     buzz();
   } else if (b.dataset.kai) {
-    // いまの現場で最後に登録した箱物を、解体済にする／戻す。まだ無ければ震える
+    // いまの現場で最後に登録したその品目を、解体済（子供用）にする／戻す。まだ無ければ震える
     const [gi, ii] = b.dataset.kai.split('-').map(Number);
     const l = cur().bigs, i = l.findLastIndex(e => e.s === targetS() && e.name === GROUPS[gi].items[ii].name);
     if (i < 0) { shakeNg(b); return; }
-    change(() => { if (l[i].kai) delete l[i].kai; else l[i].kai = true; });
+    const f = b.dataset.flag || 'kai';
+    change(() => { if (l[i][f]) delete l[i][f]; else l[i][f] = true; });
     buzz();
   } else if (b.dataset.unbig != null) {
     const l = cur().bigs, i = l.findLastIndex(e => e.s === targetS() && bigLabel(e) === b.dataset.unbig);
