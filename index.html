@@ -329,7 +329,6 @@ body.lock { overflow: hidden; }
 .room-go small { font-size: 12px; font-weight: 600; color: var(--text2); margin-left: 6px; }
 .room-go.now { background: var(--accent); border-color: var(--accent); color: var(--on-accent); } /* いまいる場所。大きさはほかと同じ */
 .room-go.now small { color: inherit; opacity: .7; }
-.room-del.now { visibility: hidden; } /* いまいる場所は消さない（幅だけ取ってそろえる） */
 .room-del { flex: none; width: 50px; height: 50px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text2); font-size: 16px; cursor: pointer; }
 .room-new { display: flex; gap: 8px; margin-top: 14px; }
 .room-new input { flex: 1; min-width: 0; height: 50px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); font: inherit; font-size: 16px; color: var(--text); -webkit-user-select: text; user-select: text; }
@@ -2014,7 +2013,7 @@ function renderRooms() {
   const off = online ? '' : '<small>オフライン</small>';
   document.getElementById('roomList').innerHTML = rooms.map(r => {
     const now = r === room ? ' now' : '';
-    return `<div class="room-row"><button class="room-go${now}" data-room="${esc(r)}">共有：${esc(r)}${now ? off : ''}</button><button class="room-del${now}" data-del="${esc(r)}" aria-label="一覧から消す">✕</button></div>`;
+    return `<div class="room-row"><button class="room-go${now}" data-room="${esc(r)}">共有：${esc(r)}${now ? off : ''}</button><button class="room-del" data-del="${esc(r)}" aria-label="一覧から消す">✕</button></div>`;
   }).join('') + `<div class="room-row"><button class="room-go${room ? '' : ' now'}" data-room="">この端末</button></div>`;
 }
 // 場所を移る。いまの場所の中身はそのまま残して、移った先の中身を出す。1つ戻すは移った先では使わない
@@ -2058,7 +2057,9 @@ document.getElementById('roomList').addEventListener('click', e => {
   if (go) goRoom(go.dataset.room);
   else if (del) {
     // 一覧から外すだけ（クラウドの中身は消えない。同じコードを打てばまた入れる）
+    // いまいる共有コードを外す時は、先にこの端末へ移る（また入りたければ同じコードを打てばいい）
     const r = del.dataset.del;
+    if (r === room) { moveRoom(''); openPanel('roomSheet'); }
     rooms = rooms.filter(x => x !== r); saveRooms();
     try { localStorage.removeItem(KEY + ':' + r); } catch (err) {}
     renderRooms();
