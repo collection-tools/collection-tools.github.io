@@ -129,6 +129,12 @@ main { padding: 12px; max-width: 560px; margin: 0 auto; }
   border: 1px solid var(--border); border-radius: 999px; background: var(--card2); padding: 6px 12px;
 }
 .kind-pop button.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* 種類の「その他」：押すと窓の中が名前を打つ欄になる */
+.kind-other { display: none; width: 100%; gap: 8px; }
+.kind-pop.typing > button { display: none; }
+.kind-pop.typing .kind-other { display: flex; }
+.kind-other input { flex: 1; min-width: 0; font: inherit; font-size: 16px; color: var(--text); background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.kind-pop .kind-other button { border-radius: 10px; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 /* 最初の画面ではタグを1行に（増えたら横にスクロール） */
 .hero .hero-big { flex-wrap: nowrap; overflow-x: auto; }
 .hero .tag { flex: none; }
@@ -499,7 +505,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
     <div class="list-top"><h2 id="listTitle"></h2><button class="view-btn" id="viewBtn" aria-label="略と詳を切り替える"></button></div>
     <div id="bigList"></div>
     <button class="calc-open" id="calcOpen" aria-label="金額登録"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><rect x="8" y="5.5" width="8" height="4" rx="1"/><circle cx="9" cy="13" r=".6" fill="currentColor"/><circle cx="12" cy="13" r=".6" fill="currentColor"/><circle cx="15" cy="13" r=".6" fill="currentColor"/><circle cx="9" cy="17" r=".6" fill="currentColor"/><circle cx="12" cy="17" r=".6" fill="currentColor"/><circle cx="15" cy="17" r=".6" fill="currentColor"/></svg></button>
-    <button class="add-big" data-open="bigSheet" aria-label="大物を足す"><svg viewBox="96 30 320 452" width="30" height="42" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-linecap="round"><g stroke-width="24"><polygon points="209.9,41.8 403.9,153.8 302.1,212.6 108.1,100.6"/><polygon points="108.1,358.2 302.1,470.2 302.1,212.6 108.1,100.6"/><polygon points="403.9,411.4 302.1,470.2 302.1,212.6 403.9,153.8"/></g><g stroke-width="12"><polygon points="123.7,169.5 197.3,212.0 197.3,170.1 123.7,127.6"/><line x1="149.2" y1="163.3" x2="171.7" y2="176.3"/><polygon points="212.9,221.0 286.5,263.5 286.5,221.6 212.9,179.1"/><line x1="238.4" y1="214.8" x2="260.9" y2="227.8"/><polygon points="123.7,229.4 286.5,323.4 286.5,281.5 123.7,187.5"/><line x1="186.0" y1="244.4" x2="224.1" y2="266.4"/><polygon points="123.7,289.3 286.5,383.3 286.5,341.4 123.7,247.4"/><line x1="186.0" y1="304.3" x2="224.1" y2="326.3"/><polygon points="123.7,349.2 286.5,443.2 286.5,401.3 123.7,307.3"/><line x1="186.0" y1="364.2" x2="224.1" y2="386.2"/></g></svg></button>
+    <button class="add-big" data-open="bigSheet" aria-label="大物を足す"><svg viewBox="96 30 320 452" width="30" height="42" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-linecap="round"><g stroke-width="14"><polygon points="209.9,41.8 403.9,153.8 302.1,212.6 108.1,100.6"/><polygon points="108.1,358.2 302.1,470.2 302.1,212.6 108.1,100.6"/><polygon points="403.9,411.4 302.1,470.2 302.1,212.6 403.9,153.8"/></g><g stroke-width="9"><polygon points="123.7,189.6 286.5,283.6 286.5,221.6 123.7,127.6"/><line x1="186.0" y1="194.6" x2="224.1" y2="216.6"/><polygon points="123.7,267.6 286.5,361.6 286.5,299.6 123.7,205.6"/><line x1="186.0" y1="272.6" x2="224.1" y2="294.6"/><polygon points="123.7,345.6 286.5,439.6 286.5,377.6 123.7,283.6"/><line x1="186.0" y1="350.6" x2="224.1" y2="372.6"/></g></svg></button>
   </section>
 </main>
 
@@ -597,11 +603,17 @@ const PRICES = [400, 900, 1300, 2300, 3200];
 // cond は記録の目印なので変えない（変えると、もう入れてある分の料金が引けなくなる）
 // kinds があれば、カードの右のピッカーで何の品目かを選べる
 const BOX_KINDS = ['タンス', 'チェスト', '収納ボックス', '本棚', 'スチール棚', '飾り棚', '戸棚', '棚', '流し台', '突っ張り棚', 'テレビ台', 'リビングボード', '調理台', 'キャビネット',
-  'カラーボックス', '下駄箱', '鏡台', '物置', 'ロッカー', 'コンテナ', '脇机', 'ペット小屋', '箱物家具', 'オーディオラック', 'サイドボード', '隙間家具'];
+  'カラーボックス', '下駄箱', '鏡台', '物置', 'ロッカー', 'コンテナ', '脇机', 'ペット小屋', '箱物家具', 'オーディオラック', 'サイドボード', '隙間家具', '仏壇'];
 const TABLE_KINDS = ['炬燵', 'ガラス'];
 const GROUPS = [
   {
     items: [
+      { name: '箱物', title: '箱物系', short: '箱物', yen: true, kinds: BOX_KINDS, other: true, kai: true, tiers: [
+        { price: 900,  cond: '180〜' },
+        { price: 1300, cond: '225〜' },
+        { price: 2300, cond: '315〜' },
+        { price: 3200, cond: '405〜' },
+      ]},
       { name: 'ベッドマット', short: 'ベマ', tiers: [
         { price: 900,  cond: '低反発', btn: '低反発マット', label: '低反発ベッドマット' },
         { price: 1300, cond: '幅120以下', btn: 'シングルマット' },
@@ -614,12 +626,6 @@ const GROUPS = [
         { price: 900,  cond: 'ベビー', btn: 'ベビーベッド', label: 'ベビーベッド' },
         { price: 1300, cond: '折り畳み', btn: '折り畳みベッド', label: '折り畳みベッド' },
         { price: 3200, cond: '二段', btn: '二段ベッド', label: '二段ベッド' },
-      ]},
-      { name: '箱物', title: '箱物系', short: '箱物', yen: true, kinds: BOX_KINDS, kai: true, tiers: [
-        { price: 900,  cond: '180〜' },
-        { price: 1300, cond: '225〜' },
-        { price: 2300, cond: '315〜' },
-        { price: 3200, cond: '405〜' },
       ]},
       { name: 'ソファー', short: 'ソファー', rows: [3, 2], tiers: [
         { price: 900,  cond: '幅100未満', btn: '一人用' },
@@ -1015,7 +1021,7 @@ function buildButtons() {
         ${it.free ? `<input class="free" data-free="${gi}-${ii}" type="text" placeholder="${it.kinds ? '種類に無い時は、品目の名前' : '品目の名前'}" autocomplete="off">` : ''}
         ${it.kinds && it.fold ? `<div class="kind-pop inline" data-pop="${gi}-${ii}">${it.kinds.map(k =>
           `<button data-pick="${k}">${k}</button>`).join('')}</div>` : it.kinds ? `<div class="kind-pop" data-pop="${gi}-${ii}">${['', ...it.kinds].map(k =>
-          `<button data-pick="${k}"${k ? '' : ' class="on"'}>${k || it.short}</button>`).join('')}</div>` : ''}
+          `<button data-pick="${k}"${k ? '' : ' class="on"'}>${k || it.short}</button>`).join('')}${it.other ? '<button data-other>その他</button><div class="kind-other"><input type="text" placeholder="品目の名前" autocomplete="off" enterkeyhint="done"><button data-other-ok>決定</button></div>' : ''}</div>` : ''}
         <div class="tiers" style="grid-template-columns:repeat(${it.rows ? 12 : it.cols || it.tiers.length},1fr)">${it.tiers.map((t, ti) =>
           `<button class="tbtn"${it.rows ? ` style="grid-column:span ${rowSpan(it.rows, ti)}"` : ''} data-tier="${gi}-${ii}-${ti}"><span class="p">${it.yen || t.yen ? t.price.toLocaleString('ja-JP') + '円' : t.btn || t.cond}</span></button>`
         ).join('')}</div>
@@ -1192,6 +1198,15 @@ document.addEventListener('click', e => {
     }
     return;
   }
+  // 種類の「その他」：窓の中を名前を打つ欄に切りかえる。決定（かEnter）でその名前を種類にする
+  if (b && b.dataset.other != null) {
+    const pop = b.closest('.kind-pop'), inp = pop.querySelector('.kind-other input');
+    pop.classList.add('typing'); inp.value = '';
+    inp.focus(); // タップの流れの中でフォーカスしないとiPhoneはキーボードを出さない
+    return;
+  }
+  if (b && b.dataset.otherOk != null) { pickOther(b.closest('.kind-pop')); return; }
+  if (e.target.closest('.kind-other')) return; // 打っている欄を押しても閉じない
   if (b && b.dataset.pick != null) {
     const pop = b.closest('.kind-pop'), kb = document.querySelector(`[data-kind="${pop.dataset.pop}"]`);
     // カードの中に並べた種類は、選んでいるのをもう一度押すと外れる
@@ -1643,7 +1658,17 @@ function setKind(kb, v) {
   kb.dataset.value = v; kb.textContent = v || kb.dataset.label;
   document.querySelectorAll(`[data-pop="${kb.dataset.kind}"] button`).forEach(x => x.classList.toggle('on', x.dataset.pick === v));
 }
+function pickOther(pop) {
+  const v = pop.querySelector('.kind-other input').value.trim();
+  if (v) setKind(document.querySelector(`[data-kind="${pop.dataset.pop}"]`), v);
+  closeKindPops();
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.closest('.kind-other')) return;
+  e.preventDefault(); e.target.blur(); pickOther(e.target.closest('.kind-pop'));
+});
 function closeKindPops() {
+  document.querySelectorAll('.kind-pop.typing').forEach(el => { el.classList.remove('typing'); el.querySelector('.kind-other input').blur(); });
   document.querySelectorAll('.kind-pop.on').forEach(el => el.classList.remove('on'));
   document.querySelectorAll('.kind.open').forEach(el => el.classList.remove('open'));
 }
