@@ -470,7 +470,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 /* 電卓と＋は浮かせて、現場の行がこの下に潜り込むようにする。一覧の下には2つの分だけ余白 */
 #listTab { position: relative; }
 #bigList { padding-bottom: 144px; }
-.add-big { position: absolute; z-index: 5; left: 25%; bottom: 16px; box-shadow: 0 0 14px 10px var(--bg); display: flex; align-items: center; justify-content: center; width: 50%; height: 54px; border-radius: 12px; border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 30px; font-weight: 700; cursor: pointer; }
+.add-big { position: absolute; z-index: 5; left: 25%; bottom: 16px; box-shadow: 0 0 14px 10px var(--bg); display: flex; align-items: center; justify-content: center; width: 50%; height: 54px; border-radius: 12px; border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 20px; font-weight: 700; cursor: pointer; }
 /* 現場の行：右端に現場ごと消す✕（いつも出ている）。行を長押しするとつかめて、指についてくる */
 .srow { position: relative; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .srow .smove, .srow .sdel { flex: none; align-self: stretch; width: 44px; border: none; border-left: 1px solid var(--border); background: none; color: var(--text2); font: inherit; font-size: 18px; cursor: pointer; }
@@ -509,7 +509,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
     <div class="list-top"><h2 id="listTitle"></h2><button class="view-btn" id="viewBtn" aria-label="略と詳を切り替える"></button></div>
     <div id="bigList"></div>
     <button class="calc-open" id="calcOpen" aria-label="金額登録"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><rect x="8" y="5.5" width="8" height="4" rx="1"/><circle cx="9" cy="13" r=".6" fill="currentColor"/><circle cx="12" cy="13" r=".6" fill="currentColor"/><circle cx="15" cy="13" r=".6" fill="currentColor"/><circle cx="9" cy="17" r=".6" fill="currentColor"/><circle cx="12" cy="17" r=".6" fill="currentColor"/><circle cx="15" cy="17" r=".6" fill="currentColor"/></svg></button>
-    <button class="add-big" data-open="bigSheet" aria-label="大物を足す"><svg viewBox="-10.0 -215.0 323.1 345.0" width="39" height="42" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-linecap="round"><g stroke-width="12.3"><polygon points="0.0,-150.0 207.8,-30.0 303.1,-85.0 95.3,-205.0"/><polygon points="0.0,0.0 207.8,120.0 207.8,-30.0 0.0,-150.0"/><polygon points="207.8,120.0 303.1,65.0 303.1,-85.0 207.8,-30.0"/></g><g stroke-width="9.0"><polygon points="13.9,-8.0 194.0,96.0 194.0,44.0 13.9,-60.0"/><polygon points="13.9,-74.0 194.0,30.0 194.0,-22.0 13.9,-126.0"/><line x1="79.7" y1="4.0" x2="128.2" y2="32.0"/><line x1="79.7" y1="-62.0" x2="128.2" y2="-34.0"/></g></svg></button>
+    <button class="add-big" data-open="bigSheet" aria-label="大物を足す">大物</button>
   </section>
 </main>
 
