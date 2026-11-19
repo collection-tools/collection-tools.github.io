@@ -314,7 +314,7 @@ body.lock { overflow: hidden; }
 .share button.sub { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
 .share-on { font-size: 15px; font-weight: 700; flex: 1; }
 .share-on small { display: block; font-size: 12px; font-weight: 600; color: var(--text2); }
-/* 日付の右：いまいる場所。「ローカル」か「共有」。押すと場所を選ぶ画面 */
+/* 日付の右：いまいる場所。「この端末」か「共有」。押すと場所を選ぶ画面 */
 .hsw { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: .02; z-index: 1; }
 .room-btn { flex: none; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text2); font: inherit; font-size: 12px; font-weight: 700; padding: 2px 8px; cursor: pointer; }
 .room-btn.shared { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -327,6 +327,9 @@ body.lock { overflow: hidden; }
 .room-row { display: flex; gap: 8px; }
 .room-go { flex: 1; min-width: 0; height: 50px; padding: 0 14px; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .room-go small { font-size: 12px; font-weight: 600; color: var(--text2); margin-left: 6px; }
+.room-go.now { background: var(--accent); border-color: var(--accent); color: var(--on-accent); } /* いまいる場所。大きさはほかと同じ */
+.room-go.now small { color: inherit; opacity: .7; }
+.room-del.now { visibility: hidden; } /* いまいる場所は消さない（幅だけ取ってそろえる） */
 .room-del { flex: none; width: 50px; height: 50px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text2); font-size: 16px; cursor: pointer; }
 .room-new { display: flex; gap: 8px; margin-top: 14px; }
 .room-new input { flex: 1; min-width: 0; height: 50px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); font: inherit; font-size: 16px; color: var(--text); -webkit-user-select: text; user-select: text; }
@@ -548,11 +551,10 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
   </div>
 </div>
 
-<!-- 場所を選ぶ画面。ローカル（この端末だけ）と、共有コードごとの場所。中身は場所ごとに別々に残る -->
+<!-- 場所を選ぶ画面。この端末（ここだけ）と、共有コードごとの場所。中身は場所ごとに別々に残る -->
 <div class="sheet center" id="roomSheet">
   <div class="sheet-head"><h1>場所</h1><button class="burger" data-close aria-label="閉じる">✕</button></div>
   <div class="sheet-body">
-    <div class="room-now" id="roomNow"></div>
     <div class="room-list" id="roomList"></div>
     <div class="room-new"><input id="roomIn" type="text" placeholder="別の共有コード" autocomplete="off" autocapitalize="off" enterkeyhint="go"><button id="roomGo">移る</button></div>
   </div>
@@ -823,7 +825,7 @@ function render() {
   document.getElementById('headTitle').innerHTML =
     `<b>${daime(state.cur)}</b>`;
   { const d = new Date(); document.getElementById('headDate').textContent = `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})`; }
-  { const b = document.getElementById('roomBtn'); b.textContent = room ? '共有' : 'ローカル'; b.className = 'room-btn' + (room ? ' shared' : '') + (room && !online ? ' off' : ''); }
+  { const b = document.getElementById('roomBtn'); b.textContent = room ? '共有' : 'この端末'; b.className = 'room-btn' + (room ? ' shared' : '') + (room && !online ? ' off' : ''); }
   if (document.getElementById('roomSheet').classList.contains('on')) renderRooms();
   // 総量を打ったら「479p/1070p」（見出しは残り/総量）。今日の合計そのものは出さない
   const goal = state.goal || 0;
@@ -2002,19 +2004,18 @@ async function subscribe() {
 setInterval(() => { if (room && subDate && subDate !== today()) { if (state.date !== today()) { state.date = today(); history = []; save(); } subscribe(); } }, 60000);
 
 // ===== 場所を選ぶ =====
-// この端末で使った共有コード。新しく使ったものほど前
+// この端末で使った共有コード。新しく足したものほど前（移っても並びは変えない）
 let rooms = [];
 try { rooms = JSON.parse(localStorage.getItem('shuushuu3-rooms')) || []; } catch (e) {}
 if (room && !rooms.includes(room)) rooms.unshift(room);
 const saveRooms = () => { try { localStorage.setItem('shuushuu3-rooms', JSON.stringify(rooms)); } catch (e) {} };
 function renderRooms() {
-  document.getElementById('roomNow').innerHTML = room
-    ? `<small>いまいる場所・共有中${online ? '' : '（オフライン。つながったら送る）'}</small><b>${esc(room)}</b>`
-    : '<small>いまいる場所</small><b>ローカル</b>';
-  const others = (room ? [''] : []).concat(rooms.filter(r => r !== room));
-  document.getElementById('roomList').innerHTML = others.map(r => r
-    ? `<div class="room-row"><button class="room-go" data-room="${esc(r)}">${esc(r)}<small>共有</small></button><button class="room-del" data-del="${esc(r)}" aria-label="一覧から消す">✕</button></div>`
-    : '<div class="room-row"><button class="room-go" data-room="">ローカル<small>この端末だけ</small></button></div>').join('');
+  // 全部同じ大きさで、上に共有、いちばん下にこの端末。いまいる場所だけ黒くする。並びは移っても変えない
+  const off = online ? '' : '<small>オフライン</small>';
+  document.getElementById('roomList').innerHTML = rooms.map(r => {
+    const now = r === room ? ' now' : '';
+    return `<div class="room-row"><button class="room-go${now}" data-room="${esc(r)}">共有：${esc(r)}${now ? off : ''}</button><button class="room-del${now}" data-del="${esc(r)}" aria-label="一覧から消す">✕</button></div>`;
+  }).join('') + `<div class="room-row"><button class="room-go${room ? '' : ' now'}" data-room="">この端末</button></div>`;
 }
 // 場所を移る。いまの場所の中身はそのまま残して、移った先の中身を出す。1つ戻すは移った先では使わない
 const hasContent = st => !!(st.goal || st.dais.some(d => d.pts.length || d.bigs.length));
@@ -2025,7 +2026,7 @@ function goRoom(r) {
   // ローカルから共有へ移る時、いまの中身があれば「持っていく？」と聞く。持っていくなら共有側の今日の分は上書きされる
   if (r && !room && hasContent(state)) {
     const from = JSON.parse(JSON.stringify(state));
-    ask(`いまのローカルの台と総量を、「${r}」に持っていく？\n共有側に今日の分があれば、上書きされて消える。`, () => {
+    ask(`いまのこの端末の台と総量を、「${r}」に持っていく？\n共有側に今日の分があれば、上書きされて消える。`, () => {
       if (!hasPlace(from)) { moveRoom(r, from); return; }
       // 場所の名前はクラウドに乗ると消せない。周りを押しても閉じない（どちらかを選ぶまで進まない）
       ask('場所の欄に書いた名前は、クラウドに乗ると消せない。', () => {
@@ -2043,7 +2044,7 @@ function moveRoom(r, bring) {
   save();
   room = r;
   try { r ? localStorage.setItem('shuushuu3-room', r) : localStorage.removeItem('shuushuu3-room'); } catch (e) {}
-  if (r) { rooms = [r].concat(rooms.filter(x => x !== r)); saveRooms(); }
+  if (r && !rooms.includes(r)) { rooms.unshift(r); saveRooms(); } // 並びは固定。新しいコードだけ上に足す
   const c = state.cur;
   load(); state.cur = Math.min(c, state.dais.length - 1);
   carry = !!bring;
