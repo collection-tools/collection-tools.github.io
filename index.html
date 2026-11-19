@@ -202,6 +202,7 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 }
 .pad-disp small { font-size: 0.55em; font-weight: 600; margin-left: 2px; }
 .pad-disp.blank { color: var(--text2); font-weight: 600; }
+.pad-add.still .hsw { display: none; } /* 押しても金額が動かない時は鳴らさない */
 .pad-add {
   width: 96px; height: 54px; border-radius: 12px; border: none;
   background: var(--accent); color: var(--on-accent); font-size: 30px; font-weight: 700;
@@ -566,7 +567,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
       <div class="pad-move" id="padMove"><button class="pad-redo" id="padRedo">点数を打つ画面に戻る</button></div>
       <div class="pad-top">
         <div class="pad-disp" id="padDisp"></div>
-        <button class="pad-add" id="padAdd">＋</button>
+        <button class="pad-add" id="padAdd"><span id="padAddTx">＋</span></button>
       </div>
       <!-- 移す時だけ：移したらどうなるか -->
       <div class="pad-prev" id="padPrev"></div>
@@ -1037,10 +1038,11 @@ function buildButtons() {
 // 触覚：Androidは vibrate。iPhoneはコードから振動させられない（iOS 26で確認）ので、
 // 主なボタンの上に透明なスイッチを重ねる。指で本物のスイッチに触れた時だけカチッと鳴る。
 // スイッチはボタンの子なので、押した時のクリックはボタンにもそのまま届く
-// 重ねるのは、電卓の金額ボタン（数字のチップ）だけ。ほかのボタンには重ねない。
+// 重ねるのは、電卓の金額ボタン（数字のチップ）と、テンキーの＋（登録・決定）だけ。ほかのボタンには重ねない。
+// テンキーの＋は、押しても金額が動かない時（何も打っていない・引けない等）はスイッチを外して鳴らさない（renderPad）。
 // （重ねると、iPhoneでスカウターの数字が降りてくる動きが消える。振動を優先して、ムツキが選んだ）
 function buzz() { if (navigator.vibrate) navigator.vibrate(15); }
-const HAPTIC_SEL = '#calcSheet .pbtn[data-price]';
+const HAPTIC_SEL = '#calcSheet .pbtn[data-price], #padAdd';
 function addHaptic(el) {
   if (el.querySelector(':scope > .hsw')) return;
   if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
@@ -1363,7 +1365,7 @@ function paintSub() {
   sb.classList.toggle('on', subMode);
   sb.setAttribute('aria-pressed', subMode);
   if (padMode === 'add') {
-    document.getElementById('padAdd').textContent = subMode ? '－' : '＋';
+    document.getElementById('padAddTx').textContent = subMode ? '－' : '＋';
     document.getElementById('padTitle').textContent = subMode ? '容積ポイントをひく' : '容積ポイントを打つ';
   }
 }
@@ -1393,7 +1395,7 @@ function setupPad() {
   if (mv) {
     padVal = '';
     document.getElementById('padTitle').textContent = `${daime(state.cur)}から${daime(padMove)}に移す`;
-    document.getElementById('padAdd').textContent = '決定';
+    document.getElementById('padAddTx').textContent = '決定';
     document.getElementById('padAdd').style.fontSize = '20px';
     paintSub();
     renderPad(); return;
@@ -1401,7 +1403,7 @@ function setupPad() {
   if (padMode === 'goal') {
     padVal = state.goal ? String(state.goal) : '';
     document.getElementById('padTitle').textContent = '今日の総量';
-    document.getElementById('padAdd').textContent = '登録';
+    document.getElementById('padAddTx').textContent = '登録';
     document.getElementById('padAdd').style.fontSize = '20px';
     paintSub();
     renderPad(); return;
@@ -1410,12 +1412,23 @@ function setupPad() {
   const yen = val(state.cur);
   padVal = dai && yen ? String(yen / 100) : '';
   document.getElementById('padTitle').textContent = dai ? `${daime(state.cur)}の容積ポイント` : '容積ポイントを打つ';
-  document.getElementById('padAdd').textContent = dai ? '登録' : '＋';
+  document.getElementById('padAddTx').textContent = dai ? '登録' : '＋';
   document.getElementById('padAdd').style.fontSize = dai ? '20px' : '';
   paintSub();
   renderPad();
 }
+// テンキーの＋を今押したら、金額が動くか（下の padAdd の onclick と同じ条件）
+function padWillMove() {
+  const n = +padVal, yen = n * 100;
+  if (padMode === 'move') return !!yen && yen <= val(state.cur);
+  if (padMode === 'goal') return n !== (state.goal || 0);
+  if (padMode === 'dai') return (yen !== val(state.cur) || state.cur === autoDai() || linkOf() >= 0) && linkOK(yen - sum(cur()));
+  if (!n) return false;
+  if (subMode) return yen <= val(state.cur) && linkOK(-yen);
+  return !over999(yen) && linkOK(yen);
+}
 function renderPad() {
+  document.getElementById('padAdd').classList.toggle('still', !padWillMove());
   if (padIn()) setAmount(padVal);
   const d = document.getElementById('padDisp');
   d.className = 'pad-disp' + (padVal ? '' : ' blank');
@@ -1473,7 +1486,7 @@ document.getElementById('padAdd').onclick = () => {
   closeAll();
 };
 
-document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); };
+document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); document.getElementById('padAdd').classList.toggle('still', !padWillMove()); };
 // 電卓の大きい数字（スカウター）を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字はスカウターに直に入る
 // 閉じる（もう一度スカウターを押す・閉じる・✕・下に払う）と、打った数字がそのままこの台の点数になる。何も打たなければ変えない
 function padEl() { return document.querySelector('.pad'); }
