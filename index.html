@@ -488,9 +488,6 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 .calc-open { position: absolute; z-index: 5; left: 50%; bottom: 80px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; border: none; background: var(--card2); color: var(--text2); box-shadow: 0 0 12px 8px var(--bg); cursor: pointer; }
 /* 電卓と＋は浮かせて、現場の行がこの下に潜り込むようにする。一覧の下には2つの分だけ余白 */
 #listTab { position: relative; }
-/* 台を払っている間だけ出す、隣の台の一覧（押せない） */
-.dai-ghost { position: absolute; left: 0; right: 0; z-index: 1; display: flex; flex-direction: column; pointer-events: none; }
-.dai-ghost .ghost-list { flex: 1; min-height: 0; overflow: hidden; }
 #bigList { padding-bottom: 144px; }
 .add-big { position: absolute; z-index: 5; left: 25%; bottom: 16px; box-shadow: 0 0 14px 10px var(--bg); display: flex; align-items: center; justify-content: center; width: 50%; height: 54px; border-radius: 12px; border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 20px; font-weight: 700; cursor: pointer; }
 /* 現場の行：右端に現場ごと消す✕（いつも出ている）。行を長押しするとつかめて、指についてくる */
@@ -1948,65 +1945,24 @@ function switchDai(to, wrapDir, still) {
       { duration: 220, easing: 'cubic-bezier(.2,.8,.3,1)' });
 }
 // 本文を左右に払うと隣の台へ（左に払うと次の台、右に払うと前の台。端はぐるっと回る）。ボタンの上から払ってもいい
-// 指についてくる（動くのは一覧だけ。見出しは動かさない）。隣の台の一覧を左右に並べておくので、動かしている途中に何も無い画面は出ない
-// 離した時に幅の3割以上（速く払えば50px以上）動いていたら切り替える。足りなければ元に戻る
+// 指にはついてこない（一度ついてくる形にしたが、ついてこないほうがいいとムツキが戻した）
 // 払った指では、ボタンを押したことにしない
 let daiSw = null, swallow = false;
 const mainEl = document.querySelector('main');
 const swipeEls = [mainEl];
-const listTabEl = document.getElementById('listTab');
-function swGhost(i, side, w) {
-  const d = state.dais[i], g = groupsOf(d), el = document.createElement('div');
-  el.className = 'dai-ghost';
-  // 見出し（大物：n箇所・略/詳）は動かさない。一覧の所にだけ重ねる
-  el.innerHTML = `<div class="ghost-list">${listHTML(g)}</div>`;
-  el.style.top = bigListEl.offsetTop + 'px'; el.style.height = bigListEl.offsetHeight + 'px';
-  el.style.transform = `translateX(${side * w}px)`;
-  listTabEl.appendChild(el);
-  return el;
-}
-function swSet(dx, anim) {
-  const { w, prev, next } = daiSw, tr = anim ? 'transform .2s cubic-bezier(.2,.8,.3,1)' : 'none';
-  [[bigListEl, 0], [prev, -w], [next, w]].forEach(([el, o]) => { el.style.transition = tr; el.style.transform = `translateX(${o + dx}px)`; });
-}
-function swClean(sw) {
-  sw.prev.remove(); sw.next.remove();
-  bigListEl.style.transition = ''; bigListEl.style.transform = '';
-}
 swipeEls.forEach(el => el.addEventListener('touchstart', e => {
-  if (daiSw && daiSw.busy) return;
-  daiSw = (e.touches.length > 1 || e.target.closest('.dais')) ? null : { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), axis: null };
+  daiSw = (e.touches.length > 1 || e.target.closest('.dais')) ? null : { x: e.touches[0].clientX, y: e.touches[0].clientY };
 }, { passive: true }));
-swipeEls.forEach(el => el.addEventListener('touchmove', e => {
-  if (!daiSw || daiSw.busy || drag) return;
-  const t = e.touches[0], dx = t.clientX - daiSw.x, dy = t.clientY - daiSw.y;
-  if (!daiSw.axis) {
-    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      const n = state.dais.length, w = listTabEl.offsetWidth + 24;
-      Object.assign(daiSw, { axis: 'x', w, prev: swGhost((state.cur - 1 + n) % n, -1, w), next: swGhost((state.cur + 1) % n, 1, w) });
-    } else if (Math.abs(dy) > 10) { daiSw = null; return; }
-    else return;
-  }
-  e.preventDefault();
-  daiSw.dx = dx; swSet(dx);
-}, { passive: false }));
 swipeEls.forEach(el => el.addEventListener('touchend', e => {
-  const sw = daiSw;
-  if (!sw || sw.busy) return;
-  if (sw.axis !== 'x') { daiSw = null; return; }
-  sw.busy = true;
+  if (!daiSw) return;
+  const t = e.changedTouches[0], dx = t.clientX - daiSw.x, dy = t.clientY - daiSw.y;
+  daiSw = null;
+  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
   swallow = true; setTimeout(() => swallow = false, 350);
-  const dx = sw.dx || 0, fast = Date.now() - sw.t < 250;
-  const go = Math.abs(dx) > sw.w * 0.3 || (fast && Math.abs(dx) > 50);
-  const dir = dx < 0 ? 1 : -1;
-  swSet(go ? -dir * sw.w : 0, true);
-  setTimeout(() => {
-    swClean(sw); daiSw = null;
-    // 端まで来たらぐるっと回る（最後の台で次へ払うと1台目、1台目で前へ払うと最後の台）
-    if (go) { const n = state.dais.length; switchDai((state.cur + dir + n) % n, dir, true); }
-  }, 210);
+  // 端まで来たらぐるっと回る（最後の台で次へ払うと1台目、1台目で前へ払うと最後の台）
+  const n = state.dais.length, dir = dx < 0 ? 1 : -1;
+  switchDai((state.cur + dir + n) % n, dir);
 }));
-swipeEls.forEach(el => el.addEventListener('touchcancel', () => { if (daiSw && daiSw.axis === 'x' && !daiSw.busy) swClean(daiSw); if (daiSw && !daiSw.busy) daiSw = null; }));
 swipeEls.forEach(el => el.addEventListener('click', e => { if (swallow) { e.stopPropagation(); e.preventDefault(); } }, true));
 
 // 並べ替え：現場の行を長押しするとつかめる。つかんだ行は指についてきて、離した所に入る（収集2と同じ動き）
