@@ -1532,18 +1532,20 @@ function closeLog() {
 }
 document.getElementById('logBtn').onclick = e => {
   e.stopPropagation();
-  const pop = document.getElementById('ptsPop'), open = !pop.classList.contains('on');
-  if (!open) { closeLog(); return; }
+  const pop = document.getElementById('ptsPop');
   renderLog(); pop.classList.add('on');
   const b = document.getElementById('logBtn'); b.classList.add('on'); b.setAttribute('aria-expanded', true);
   pop.scrollTop = 0; // 最新（いちばん上）を見せる
 };
-// 開いている間に外を押したら、閉じるだけ（下のボタンを押したことにしない）
-document.addEventListener('click', e => {
+// 開いている間に記録の外（時計も含む）を触ったら、閉じるだけ（その指でボタンを押したことにしない）
+// iPhoneはボタンでない所を押してもクリックが来ないので、指を置いた時点（pointerdown）で閉じる
+let logSwallow = false;
+document.addEventListener('pointerdown', e => {
   const pop = document.getElementById('ptsPop');
-  if (!pop.classList.contains('on') || e.target.closest('#ptsPop') || e.target.closest('#logBtn')) return;
-  e.stopPropagation(); e.preventDefault(); closeLog();
+  if (!pop.classList.contains('on') || e.target.closest('#ptsPop')) return;
+  closeLog(); logSwallow = true; setTimeout(() => { logSwallow = false; }, 600);
 }, true);
+document.addEventListener('click', e => { if (logSwallow) { logSwallow = false; e.stopPropagation(); e.preventDefault(); } }, true);
 document.getElementById('doneBtn').onclick = () => change(() => { const d = cur(); if (d.done) delete d.done; else d.done = true; });
 document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); document.getElementById('padAdd').classList.toggle('still', !padWillMove()); };
 // 電卓の大きい数字（スカウター）を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字はスカウターに直に入る
