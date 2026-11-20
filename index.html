@@ -265,6 +265,20 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
   padding: 5px 12px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer;
 }
 .done-btn { min-width: 64px; }
+.hero-btns { display: flex; gap: 8px; }
+.log-btn { display: flex; align-items: center; justify-content: center; padding: 5px 10px; }
+.log-btn.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* 足したポイントの記録：時計を押すと、カードの下に縦に並べて出す（古い順。下が最新）。外を押すと閉じる */
+.pts-pop { display: none; position: absolute; z-index: 6; top: calc(100% + 6px); right: 0; width: 210px; max-height: 50vh; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 6px 0; }
+.pts-pop.on { display: block; }
+.pts-pop .pl { display: grid; grid-template-columns: 2.2em 1fr auto; align-items: baseline; gap: 6px; padding: 5px 14px; font-variant-numeric: tabular-nums; }
+.pts-pop .pl + .pl { border-top: 1px solid var(--border); }
+.pts-pop .pl i { font-style: normal; font-size: 12px; color: var(--text2); }
+.pts-pop .pl b { font-size: 17px; }
+.pts-pop .pl span { font-size: 13px; color: var(--text2); }
+.pts-pop .pl:last-child b { color: var(--accent); }
+.pts-pop .none { padding: 8px 14px; color: var(--text2); font-size: 14px; }
 .done-btn.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); } /* 済：この台は終わった */
 .site .bg { flex: 1; font-weight: 600; }
 .now { font-size: 13px; color: var(--text2); margin: 0 2px 10px; }
@@ -542,7 +556,8 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
   <div class="sheet-head"><h1>金額登録</h1><button class="burger" data-close aria-label="閉じる">✕</button></div>
   <div class="sheet-body" id="calcBody">
     <div class="hero">
-      <div class="hero-label"><span id="heroLabel"></span><span class="hero-side"><span id="heroCount"></span><button class="sites-btn done-btn" id="doneBtn" aria-pressed="false">済</button></span></div>
+      <div class="hero-label"><span id="heroLabel"></span><span class="hero-side"><span id="heroCount"></span><span class="hero-btns"><button class="sites-btn log-btn" id="logBtn" aria-label="足したポイントの記録" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button><button class="sites-btn done-btn" id="doneBtn" aria-pressed="false">済</button></span></span></div>
+      <div class="pts-pop" id="ptsPop"></div>
       <div class="hero-row"><div class="hero-amount" id="heroAmount"></div><button class="sub-btn" id="subBtn" aria-pressed="false">ひく</button></div>
     </div>
     <div class="combo-row" id="comboRow"></div>
@@ -852,6 +867,7 @@ function render() {
 
   const groups = groupsOf(dai);
   // 済：この台は終わった印（押す意味は特に無い。もう一度押すと外れる）
+  if (document.getElementById('ptsPop').classList.contains('on')) renderLog(); // 開いたまま足しても、記録を追いかける
   const db = document.getElementById('doneBtn');
   db.classList.toggle('on', !!dai.done); db.setAttribute('aria-pressed', !!dai.done);
 
@@ -1505,6 +1521,32 @@ document.getElementById('padAdd').onclick = () => {
   closeAll();
 };
 
+// 時計：この台で足したポイントを、足した順に縦に並べる（右は、そこまでの合計）
+function renderLog() {
+  let run = 0;
+  const pts = cur().pts;
+  document.getElementById('ptsPop').innerHTML = pts.length
+    ? pts.map((y, i) => { run += y; return `<div class="pl"><i>${i + 1}</i><b>${y < 0 ? '' : '+'}${pt(y)}p</b><span>${pt(run)}p</span></div>`; }).join('')
+    : '<div class="none">まだ何も足してない</div>';
+}
+function closeLog() {
+  document.getElementById('ptsPop').classList.remove('on');
+  const b = document.getElementById('logBtn'); b.classList.remove('on'); b.setAttribute('aria-expanded', false);
+}
+document.getElementById('logBtn').onclick = e => {
+  e.stopPropagation();
+  const pop = document.getElementById('ptsPop'), open = !pop.classList.contains('on');
+  if (!open) { closeLog(); return; }
+  renderLog(); pop.classList.add('on');
+  const b = document.getElementById('logBtn'); b.classList.add('on'); b.setAttribute('aria-expanded', true);
+  pop.scrollTop = pop.scrollHeight; // 最新（いちばん下）を見せる
+};
+// 開いている間に外を押したら、閉じるだけ（下のボタンを押したことにしない）
+document.addEventListener('click', e => {
+  const pop = document.getElementById('ptsPop');
+  if (!pop.classList.contains('on') || e.target.closest('#ptsPop') || e.target.closest('#logBtn')) return;
+  e.stopPropagation(); e.preventDefault(); closeLog();
+}, true);
 document.getElementById('doneBtn').onclick = () => change(() => { const d = cur(); if (d.done) delete d.done; else d.done = true; });
 document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); document.getElementById('padAdd').classList.toggle('still', !padWillMove()); };
 // 電卓の大きい数字（スカウター）を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字はスカウターに直に入る
@@ -1744,6 +1786,7 @@ function openPanel(id) {
 // 電卓の中のテンキーは電卓の上に重ねて開く。閉じたら電卓だけが残る
 let backToCalc = false;
 function closeAll() {
+  closeLog();
   padBack();
   // 電卓の上に重ねたテンキーは、テンキーだけ閉じる（足した時も、✕の時も）
   if (backToCalc && document.getElementById('padSheet').classList.contains('on')) {
