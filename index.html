@@ -205,7 +205,7 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 }
 .pad-disp small { font-size: 0.55em; font-weight: 600; margin-left: 2px; }
 .pad-disp.blank { color: var(--text2); font-weight: 600; }
-.pad-add.still .hsw { display: none; } /* 押しても金額が動かない時は鳴らさない */
+.pad-add.still .hsw, #calcUndo.still .hsw { display: none; } /* 押しても金額が動かない時は鳴らさない */
 .pad-add {
   width: 96px; height: 54px; border-radius: 12px; border: none;
   background: var(--accent); color: var(--on-accent); font-size: 30px; font-weight: 700;
@@ -864,6 +864,7 @@ function render() {
 
   const groups = groupsOf(dai);
   // 済：この台は終わった印（押す意味は特に無い。もう一度押すと外れる）
+  if (document.getElementById('calcSheet').classList.contains('on')) document.getElementById('calcUndo').classList.toggle('still', !undoMoves());
   if (document.getElementById('ptsPop').classList.contains('on')) renderLog(); // 開いたまま足しても、記録を追いかける
   const db = document.getElementById('doneBtn');
   db.classList.toggle('on', !!dai.done); db.setAttribute('aria-pressed', !!dai.done);
@@ -1049,11 +1050,12 @@ function buildButtons() {
 // 触覚：Androidは vibrate。iPhoneはコードから振動させられない（iOS 26で確認）ので、
 // 主なボタンの上に透明なスイッチを重ねる。指で本物のスイッチに触れた時だけカチッと鳴る。
 // スイッチはボタンの子なので、押した時のクリックはボタンにもそのまま届く
-// 重ねるのは、電卓の金額ボタン（数字のチップ）と、テンキーの＋（登録・決定）だけ。ほかのボタンには重ねない。
+// 重ねるのは、電卓の金額ボタン（数字のチップ）と、テンキーの＋（登録・決定）と、電卓の「1つ戻す」だけ。ほかのボタンには重ねない。
+// 電卓の「1つ戻す」も、戻しても今の台の金額が変わらない時（大物や済だけの変更・何も無い）は鳴らさない（render）。
 // テンキーの＋は、押しても金額が動かない時（何も打っていない・引けない等）はスイッチを外して鳴らさない（renderPad）。
 // （重ねると、iPhoneでスカウターの数字が降りてくる動きが消える。振動を優先して、ムツキが選んだ）
 function buzz() { if (navigator.vibrate) navigator.vibrate(15); }
-const HAPTIC_SEL = '#calcSheet .pbtn[data-price], #padAdd';
+const HAPTIC_SEL = '#calcSheet .pbtn[data-price], #padAdd, #calcUndo';
 function addHaptic(el) {
   if (el.querySelector(':scope > .hsw')) return;
   if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
@@ -1583,12 +1585,22 @@ document.getElementById('padToMove').onclick = e => {
   padMode = 'move'; padMove = +b.dataset.tomove; setupPad();
 };
 document.getElementById('restBtn').onclick = () => { padMode = 'goal'; openPanel('padSheet'); };
+// いま見ている台の最後の変更が、記録の何番目か（無ければ -1）
+function undoStep() {
+  const c = state.cur, now = JSON.stringify(state.dais[c]);
+  for (let i = history.length - 1; i >= 0; i--) if (JSON.stringify(JSON.parse(history[i]).dais[c]) !== now) return i;
+  return -1;
+}
+// 電卓の「1つ戻す」を今押したら、今の台の金額が動くか
+function undoMoves() {
+  const i = undoStep();
+  return i >= 0 && sum(JSON.parse(history[i]).dais[state.cur] || newDai()) !== sum(cur());
+}
 // 1つ戻す：いま見ている台の、最後の変更だけを戻す（ほかの台で後からした変更はそのまま。見ている台も動かさない）
 // その変更で一緒に動いた台（3・4台目の相手、残りの台、全てリセット）と総量も、その時の分だけ戻す
 document.getElementById('undo').onclick = () => {
   const J = x => JSON.stringify(x), c = state.cur;
-  let i = history.length - 1;
-  for (; i >= 0; i--) { const h = JSON.parse(history[i]); if (J(h.dais[c]) !== J(state.dais[c])) break; }
+  const i = undoStep();
   if (i < 0) return;
   const before = J(state);
   const h = JSON.parse(history[i]), after = i + 1 < history.length ? JSON.parse(history[i + 1]) : state;
@@ -1779,6 +1791,7 @@ function closeKindPops() {
 function openPanel(id) {
   closeAll();
   if (id === 'padSheet') setupPad();
+  if (id === 'calcSheet') document.getElementById('calcUndo').classList.toggle('still', !undoMoves());
   document.getElementById(id).classList.add('on');
   scrim.classList.add('on'); document.body.classList.add('lock');
 }
