@@ -489,7 +489,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 /* 電卓と＋は浮かせて、現場の行がこの下に潜り込むようにする。一覧の下には2つの分だけ余白 */
 #listTab { position: relative; }
 /* 台を払っている間だけ出す、隣の台の一覧（押せない） */
-.dai-ghost { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; pointer-events: none; }
+.dai-ghost { position: absolute; left: 0; right: 0; z-index: 1; display: flex; flex-direction: column; pointer-events: none; }
 .dai-ghost .ghost-list { flex: 1; min-height: 0; overflow: hidden; }
 #bigList { padding-bottom: 144px; }
 .add-big { position: absolute; z-index: 5; left: 25%; bottom: 16px; box-shadow: 0 0 14px 10px var(--bg); display: flex; align-items: center; justify-content: center; width: 50%; height: 54px; border-radius: 12px; border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 20px; font-weight: 700; cursor: pointer; }
@@ -1947,28 +1947,30 @@ function switchDai(to, wrapDir, still) {
       { duration: 220, easing: 'cubic-bezier(.2,.8,.3,1)' });
 }
 // 本文を左右に払うと隣の台へ（左に払うと次の台、右に払うと前の台。端はぐるっと回る）。ボタンの上から払ってもいい
-// 指についてくる。隣の台の一覧を左右に並べておくので、動かしている途中に何も無い画面は出ない
+// 指についてくる（動くのは一覧だけ。見出しは動かさない）。隣の台の一覧を左右に並べておくので、動かしている途中に何も無い画面は出ない
 // 離した時に幅の3割以上（速く払えば50px以上）動いていたら切り替える。足りなければ元に戻る
 // 払った指では、ボタンを押したことにしない
 let daiSw = null, swallow = false;
 const mainEl = document.querySelector('main');
 const swipeEls = [mainEl];
-const listTabEl = document.getElementById('listTab'), listTopEl = listTabEl.querySelector('.list-top');
+const listTabEl = document.getElementById('listTab');
 function swGhost(i, side, w) {
   const d = state.dais[i], g = groupsOf(d), el = document.createElement('div');
   el.className = 'dai-ghost';
-  el.innerHTML = `<div class="list-top"><h2>大物：${g.length}箇所</h2><button class="view-btn" tabindex="-1">${document.getElementById('viewBtn').innerHTML}</button></div><div class="ghost-list">${listHTML(g)}</div>`;
+  // 見出し（大物：n箇所・略/詳）は動かさない。一覧の所にだけ重ねる
+  el.innerHTML = `<div class="ghost-list">${listHTML(g)}</div>`;
+  el.style.top = bigListEl.offsetTop + 'px'; el.style.height = bigListEl.offsetHeight + 'px';
   el.style.transform = `translateX(${side * w}px)`;
   listTabEl.appendChild(el);
   return el;
 }
 function swSet(dx, anim) {
   const { w, prev, next } = daiSw, tr = anim ? 'transform .2s cubic-bezier(.2,.8,.3,1)' : 'none';
-  [[listTopEl, 0], [bigListEl, 0], [prev, -w], [next, w]].forEach(([el, o]) => { el.style.transition = tr; el.style.transform = `translateX(${o + dx}px)`; });
+  [[bigListEl, 0], [prev, -w], [next, w]].forEach(([el, o]) => { el.style.transition = tr; el.style.transform = `translateX(${o + dx}px)`; });
 }
 function swClean(sw) {
   sw.prev.remove(); sw.next.remove();
-  [listTopEl, bigListEl].forEach(el => { el.style.transition = ''; el.style.transform = ''; });
+  bigListEl.style.transition = ''; bigListEl.style.transform = '';
 }
 swipeEls.forEach(el => el.addEventListener('touchstart', e => {
   if (daiSw && daiSw.busy) return;
