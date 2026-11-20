@@ -1,9 +1,9 @@
 // 中身を変えたら CACHE_NAME の数字を上げる（上げないと古いままになる）
-const CACHE_NAME = 'shuushuu3-159'; // v3 は shuushuu3- で始める（元の版・v2と混ざらないように）
+const CACHE_NAME = 'shuushuu3-160'; // v3 は shuushuu3- で始める（元の版・v2と混ざらないように）
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))));
   self.skipWaiting();
 });
 
@@ -14,17 +14,17 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ネットがあれば新しいほう、無ければキャッシュ（車内で電波が切れても開ける）
+// 手元の版をすぐ出して、裏でサーバーに新しいのを取りに行く（起動のたびに電波を待たない）
+// 新しい版が入ったら sw.js ごと変わるので、そこで index.html 側が読み直す
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   // 共有（Firestore）の通信や外のライブラリには手を出さない。このサイトの物だけ
   if (new URL(e.request.url).origin !== location.origin) return;
-  e.respondWith(
-    // ブラウザの一時保存（GitHub Pages は10分）を飛ばして、毎回サーバーに新しいか聞く
-    fetch(e.request, { cache: 'no-cache' }).then(r => {
-      const copy = r.clone();
-      caches.open(CACHE_NAME).then(c => c.put(e.request, copy));
-      return r;
-    }).catch(() => caches.match(e.request))
-  );
+  // ブラウザの一時保存（GitHub Pages は10分）を飛ばして、毎回サーバーに新しいか聞く
+  const net = fetch(e.request, { cache: 'no-cache' }).then(r => {
+    if (r.ok) { const copy = r.clone(); caches.open(CACHE_NAME).then(c => c.put(e.request, copy)); }
+    return r;
+  });
+  e.waitUntil(net.catch(() => {}));
+  e.respondWith(caches.open(CACHE_NAME).then(c => c.match(e.request, { ignoreSearch: true })).then(hit => hit || net));
 });

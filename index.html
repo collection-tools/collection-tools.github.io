@@ -2178,7 +2178,14 @@ render();
 renderPad();
 
 subscribe();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if ('serviceWorker' in navigator) {
+  // 新しい版が入った時、まだ何も触っていなければ読み直して新しい版にする（打っている途中なら次に開いた時）
+  let touched = false;
+  addEventListener('pointerdown', () => { touched = true; }, { once: true, capture: true });
+  const hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW && !touched) location.reload(); });
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
 <div class="ask" id="ask"><div class="ask-box"><div class="ask-msg" id="askMsg"></div><button class="ask-ok" id="askOk">OK</button><button class="ask-no" id="askNo">キャンセル</button></div></div>
 </body>
