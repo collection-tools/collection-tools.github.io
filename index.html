@@ -79,6 +79,7 @@ main { padding: 12px; max-width: 560px; margin: 0 auto; }
 /* 空いた桁：数字1つ分の幅をとって、グレーの下線「_」だけ見せる */
 .hero-amount .ph { color: transparent; font-style: normal; position: relative; }
 .hero-amount .ph::after { content: ''; position: absolute; left: 10%; right: 10%; bottom: 0.14em; height: 0.07em; border-radius: 2px; background: #cfcfcb; }
+.hero-amount.hint .dg { color: #c4c4bf; } /* テンキーを出したけど、まだ何も打っていない：今の点数を薄く */
 .hero-amount small { font-size: 22px; font-weight: 700; margin-left: 2px; }
 /* 台の数字と、その右のいまの現場。現場は数字と大物ボタンの間の空きに置く */
 .hero-row { display: flex; align-items: flex-end; }
@@ -854,7 +855,7 @@ function render() {
   document.getElementById('dayTotal').innerHTML = goal
     ? `${goal - dayTotal / 100}p<small>/${goal}p</small>`
     : `--p<small>/--p</small>`; // 総量を打つ前は、電卓で足しても動かさない
-  setAmount(padIn() ? padVal : pt(total)); // テンキーで打っている間は、打った数字をここに出す
+  if (padIn()) padAmount(); else setAmount(pt(total)); // テンキーで打っている間は、打った数字をここに出す
   document.getElementById('heroLabel').textContent = `${state.cur + 1}台目の容積ポイント`;
   // 件数はポイントを入れた回数。大物は数えない
   document.getElementById('heroCount').textContent = `${dai.pts.length}件`;
@@ -1475,9 +1476,14 @@ function padWillMove() {
   if (subMode) return yen <= val(state.cur) && linkOK(-yen);
   return !over999(yen) && linkOK(yen);
 }
+// テンキーで打っている間の大きい数字。まだ何も打っていなければ、今の点数を薄く残しておく（消えたように見えないように）。打った1文字目から置きかわる
+function padAmount() {
+  document.getElementById('heroAmount').classList.toggle('hint', !padVal);
+  setAmount(padVal || String(val(state.cur) / 100));
+}
 function renderPad() {
   document.getElementById('padAdd').classList.toggle('still', !padWillMove());
-  if (padIn()) setAmount(padVal);
+  if (padIn()) padAmount();
   const d = document.getElementById('padDisp');
   d.className = 'pad-disp' + (padVal ? '' : ' blank');
   d.innerHTML = padVal ? `${padVal}<small>p</small>` : '0<small>p</small>';
@@ -1571,6 +1577,7 @@ function padHome() { return document.querySelector('#padSheet .sheet-body'); }
 function padIn() { return document.getElementById('calcSheet').classList.contains('padin'); }
 function padBack() {
   if (!padIn()) return;
+  document.getElementById('heroAmount').classList.remove('hint');
   padHome().appendChild(padEl());
   document.getElementById('calcSheet').classList.remove('padin');
   const typed = padVal; padVal = '';
