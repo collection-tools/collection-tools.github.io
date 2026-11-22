@@ -1823,6 +1823,8 @@ function openPanel(id) {
   closeAll();
   if (id === 'padSheet') setupPad();
   if (id === 'calcSheet') document.getElementById('calcUndo').classList.toggle('still', !undoMoves());
+  // 大物登録は開くたびにいちばん上から（前に見ていた位置を持ち越さない）
+  if (id === 'bigSheet') document.querySelector('#bigSheet .sheet-body').scrollTop = 0;
   document.getElementById(id).classList.add('on');
   scrim.classList.add('on'); document.body.classList.add('lock');
 }
