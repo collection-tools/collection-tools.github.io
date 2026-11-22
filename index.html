@@ -1004,6 +1004,21 @@ function abbr0(e) {
 }
 
 // 一覧用の書き方：「900円テーブル」。料金は品目ボタンの定義から引く
+// 詳の書き方：「1300ベッド」。円も桁のカンマも付けない。名前だけで値段が決まるもの（袖なし机・製図机など）は値段を書かない
+const PRICE_OF_LABEL = new Map(); // 名前 → 値段（同じ名前で値段が違うものは null）
+for (const g of GROUPS) for (const it of g.items) {
+  for (const t of it.tiers) {
+    const nm = t.label || t.name || it.name;
+    PRICE_OF_LABEL.set(nm, PRICE_OF_LABEL.has(nm) && PRICE_OF_LABEL.get(nm) !== t.price ? null : t.price);
+  }
+  for (const k of it.kinds || []) PRICE_OF_LABEL.set(k, null); // 箱物の種類（PC机など）は大きさで値段が変わる
+}
+function shouLabel(l) {
+  const m = l.match(/^([\d,]+)円(.*?)((?:（[解子]）)*)$/);
+  if (!m) return l;
+  const nm = m[2];
+  return (PRICE_OF_LABEL.get(nm) ? '' : m[1].replace(/,/g, '')) + nm + m[3];
+}
 function bigLabel(e) {
   let yenv = 0, name = e.name;
   for (const g of GROUPS) for (const it of g.items)
@@ -1108,7 +1123,7 @@ function listHTML(groups) {
         [...g.items.reduce((m, b) => m.set(abbr(b), (m.get(abbr(b)) || 0) + 1), new Map())].map(([a, n]) =>
         `<span class="chip">${a}${n > 1 ? '×' + n : ''}</span>`).join('')}</div>`
     : `<div class="shou">${[...g.items.reduce((m, b) => m.set(bigLabel(b), (m.get(bigLabel(b)) || 0) + 1), new Map())].map(([l, n]) =>
-        l.replace(/^([\d,]+)円/, (_, y) => y.replace(/,/g, '')) + (n > 1 ? '×' + n : '')).join('、')}</div>` // 詳は「1300ベッド」。円も桁のカンマも付けない
+        shouLabel(l) + (n > 1 ? '×' + n : '')).join('、')}</div>`
   }<button class="splace" data-place aria-label="場所を書く">${esc((g.items.find(b => b.place) || {}).place || '')}</button><button class="smove" data-smove aria-label="この現場を別の台へ移す">→</button><button class="sdel" data-sdel aria-label="この現場を消す">✕</button></div>`
   ).join('');
 }
