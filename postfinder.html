@@ -483,6 +483,16 @@ function switchTab(tab){
 
 setSliderPos(0, false);
 
+/* 指が動いたら押さない：スワイプの終わりにボタンの上で指を離しても、iPhoneは押した扱いにするため */
+(function(){
+  let x=0, y=0, moved=false;
+  document.addEventListener('touchstart', e => { x=e.touches[0].clientX; y=e.touches[0].clientY; moved=false; }, {passive:true, capture:true});
+  document.addEventListener('touchmove', e => {
+    if (Math.abs(e.touches[0].clientX-x) > 10 || Math.abs(e.touches[0].clientY-y) > 10) moved = true;
+  }, {passive:true, capture:true});
+  document.addEventListener('click', e => { if (moved) { moved=false; e.stopPropagation(); e.preventDefault(); } }, true);
+})();
+
 let num = '';
 function pressKey(k){
   if(num.length>=4) return;
