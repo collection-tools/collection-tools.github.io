@@ -22,8 +22,13 @@
     width: 100%; background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
-  .header-top { padding: 12px 20px 10px; text-align: center; }
-  header h1 { font-size: 15px; font-weight: 700; color: var(--sub); }
+  .header-top { padding: 8px 12px; display: flex; justify-content: flex-end; }
+  /* 現場を選ぶ。いまは現場1だけ。増やす時は option と、その現場のポストの並びを足す */
+  .site {
+    -webkit-appearance: none; appearance: none; font: inherit; font-size: 15px; font-weight: 700; color: var(--text);
+    height: 36px; padding: 0 30px 0 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+    background: var(--key-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238c8c8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 11px center;
+  }
   .tabs { display: flex; border-top: 1px solid var(--border); }
   .tab-btn {
     flex: 1; padding: 12px; border: none; background: transparent;
@@ -131,7 +136,7 @@
 </head>
 <body>
 <header>
-  <div class="header-top"><h1>現場1 — ポスト位置</h1></div>
+  <div class="header-top"><select class="site" id="site" aria-label="現場"><option value="1">現場1</option></select></div>
   <div class="tabs">
     <button class="tab-btn active" id="tab-search" onclick="switchTab('search')">検索</button>
     <button class="tab-btn" id="tab-list" onclick="switchTab('list')">一覧</button>
