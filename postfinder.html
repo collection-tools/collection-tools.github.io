@@ -98,9 +98,9 @@
   }
   @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .map-caption { text-align: center; margin-bottom: 16px; }
-  .map-caption .cap-room { display: block; font-size: 20px; color: var(--sub); margin-bottom: 1px; }
+  .map-caption .cap-room { display: block; font-size: 20px; color: #5f5f5d; margin-bottom: 1px; }
   .map-caption .cap-loc { display: block; font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: 0.03em; }
-  .map-caption .cap-within { display: block; font-size: 18px; color: var(--sub); margin-top: 2px; }
+  .map-caption .cap-within { display: block; font-size: 18px; color: #5f5f5d; margin-top: 2px; }
   svg { width: 100%; height: auto; display: block; overflow: visible; }
   .notfound { text-align: center; padding: 36px 0; color: var(--border); font-size: 14px; }
   .confirm-btn { width: 100%; margin-top: 8px; padding: 18px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 18px; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -260,7 +260,7 @@ function drawMap(loc) {
     const cnt = seg.n;
     const isHitFace = (loc.segIdx === si);
     const lp = labelPos[si];
-    faceLabels += `<text x="${lp.x}" y="${lp.y}" fill="${isHitFace ? '#3f6a96' : '#aaa'}" font-size="13" font-weight="700" text-anchor="middle">${si+1}</text>`;
+    faceLabels += `<text x="${lp.x}" y="${lp.y}" fill="${isHitFace ? '#3f6a96' : '#6f6f6d'}" font-size="13" font-weight="700" text-anchor="middle">${si+1}</text>`;
     for (let k=1; k<=cnt; k++){
       const t = (k-0.5)/cnt;
       const cx = ln.x1 + (ln.x2-ln.x1)*t;
@@ -270,7 +270,7 @@ function drawMap(loc) {
         cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="#3f6a96"><animate attributeName="r" values="6;9;6" dur="1.6s" repeatCount="indefinite"/></circle>`;
         cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="none" stroke="#3f6a96" stroke-width="2"><animate attributeName="r" values="6;22" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.7;0" dur="1.6s" repeatCount="indefinite"/></circle>`;
       } else {
-        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${isHitFace ? '#3f6a96' : '#d4d4d2'}"/>`;
+        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${isHitFace ? '#3f6a96' : '#a8a8a6'}"/>`;
       }
     }
   });
@@ -278,15 +278,15 @@ function drawMap(loc) {
   <div class="map-wrap">
     <div class="map-caption"><span class="cap-room"><span style="color:var(--accent);font-weight:700;">${loc.n}</span> 号室のポスト</span><br><span class="cap-loc">${loc.seg.label}</span><span class="cap-within">${loc.row===1?'最上段':loc.row===7?'最下段':loc.row===4?'中央段':loc.row<=3?`上から${loc.row}段目`:`下から${8-loc.row}段目`}・${loc.within===1?'左端':loc.within===loc.seg.n?'右端':loc.within<=(loc.seg.n+1)/2?`左から${loc.within}番目`:`右から${loc.seg.n-loc.within+1}番目`}</span></div>
     <svg viewBox="0 0 ${W} ${H}">
-      <line x1="192" y1="24"  x2="226" y2="24"  stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
-      <line x1="226" y1="24"  x2="226" y2="283" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
-      <line x1="22"  y1="283" x2="226" y2="283" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
-      <line x1="22"  y1="283" x2="22"  y2="271" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
-      <line x1="22"  y1="244" x2="22"  y2="233" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
-      <line x1="22"  y1="271" x2="-5"  y2="271" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
-      <path d="M -5,271 A 27,27 0 0 1 22,244" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round"/>
+      <line x1="192" y1="24"  x2="226" y2="24"  stroke="#9a9a98" stroke-width="2" stroke-linecap="round"/>
+      <line x1="226" y1="24"  x2="226" y2="283" stroke="#9a9a98" stroke-width="2" stroke-linecap="round"/>
+      <line x1="22"  y1="283" x2="226" y2="283" stroke="#9a9a98" stroke-width="2" stroke-linecap="round"/>
+      <line x1="22"  y1="283" x2="22"  y2="271" stroke="#9a9a98" stroke-width="2" stroke-linecap="round"/>
+      <line x1="22"  y1="244" x2="22"  y2="233" stroke="#9a9a98" stroke-width="2" stroke-linecap="round"/>
+      <line x1="22"  y1="271" x2="-5"  y2="271" stroke="#9a9a98" stroke-width="2" stroke-linecap="round"/>
+      <path d="M -5,271 A 27,27 0 0 1 22,244" fill="none" stroke="#9a9a98" stroke-width="2" stroke-linecap="round"/>
       ${faceLabels}${cells}
-      <text x="22" y="262" fill="#aaa" font-size="11" font-weight="600" text-anchor="middle">入口</text>
+      <text x="22" y="262" fill="#6f6f6d" font-size="11" font-weight="600" text-anchor="middle">入口</text>
     </svg>
   </div>`;
 }
