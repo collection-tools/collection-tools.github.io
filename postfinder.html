@@ -36,20 +36,19 @@
     width: 100%; flex: 1; overflow: hidden; position: relative;
   }
   .slider {
-    display: flex; width: 300%; height: 100%;
+    display: flex; width: 200%; height: 100%;
     transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
     will-change: transform;
   }
   .slider.no-transition { transition: none; }
   .tab-panel {
-    width: calc(100% / 3); flex-shrink: 0; height: 100%;
+    width: calc(100% / 2); flex-shrink: 0; height: 100%;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
     padding: 20px 16px 40px;
     display: flex; flex-direction: column; gap: 28px;
     box-sizing: border-box;
   }
   #panel-search { justify-content: center; overflow-y: hidden; }
-  #panel-history { justify-content: flex-start; }
   #panel-list { justify-content: flex-start; }
   .section-label {
     font-size: 14px; font-weight: 700; color: var(--sub);
@@ -109,22 +108,6 @@
   .toast.hide { animation: toastOut 0.3s ease forwards; }
   @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
   @keyframes toastOut { to { opacity:0; transform: translateX(-50%) translateY(8px); } }
-  /* 履歴 */
-  .history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .history-clear { background: none; border: none; color: var(--sub); font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; text-decoration: underline; }
-  .history-list { display: flex; flex-direction: column; gap: 8px; }
-  .history-item {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-    padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .history-item:active { background: var(--key-bg); }
-  .hi-main { flex: 1; display: flex; flex-direction: column; gap: 1px; }
-  .hi-room { font-size: 16px; color: var(--sub); }
-  .hi-loc { font-size: 20px; font-weight: 700; color: var(--text); }
-  .hi-within { font-size: 14px; color: var(--sub); }
-  .hi-time { font-size: 11px; color: var(--border); flex-shrink: 0; }
-  .history-empty { text-align: center; padding: 48px 16px; color: var(--border); font-size: 14px; }
   /* 一覧 */
   .list-section { margin-bottom: 24px; }
   .list-section-label {
@@ -143,7 +126,6 @@
   .list-room-empty { min-width: 44px; height: 100%; border: 1.5px dashed var(--border); border-radius: 6px; padding: 6px 4px; }
   body.swiping .key:active,
   body.swiping .list-room:active,
-  body.swiping .history-item:active,
   body.swiping .confirm-btn:active { background: revert; }
 </style>
 </head>
@@ -152,7 +134,6 @@
   <div class="header-top"><h1>現場1 — ポスト位置</h1></div>
   <div class="tabs">
     <button class="tab-btn active" id="tab-search" onclick="switchTab('search')">検索</button>
-    <button class="tab-btn" id="tab-history" onclick="switchTab('history')">履歴</button>
     <button class="tab-btn" id="tab-list" onclick="switchTab('list')">一覧</button>
   </div>
 </header>
@@ -189,14 +170,6 @@
       </div>
       <button class="confirm-btn" onclick="confirmExact()">検索</button>
     </div>
-  </div>
-
-  <div class="tab-panel" id="panel-history">
-    <div class="history-head">
-      <span class="section-label" style="margin-bottom:0">検索履歴</span>
-      <button class="history-clear" id="historyClear" onclick="clearHistory()">すべて消去</button>
-    </div>
-    <div class="history-list" id="historyList"></div>
   </div>
 
   <div class="tab-panel" id="panel-list">
@@ -313,65 +286,6 @@ function drawMap(loc) {
   </div>`;
 }
 
-/* ===== 履歴 ===== */
-const HKEY = 'inzapark_post_history';
-function loadHistory(){
-  try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); }
-  catch(e){ return []; }
-}
-function saveHistory(arr){
-  try { localStorage.setItem(HKEY, JSON.stringify(arr)); } catch(e){}
-}
-function addHistory(n){
-  let h = loadHistory();
-  h = h.filter(item => item.n !== n);   // 同じ番号は重複させず最新に
-  h.unshift({ n, t: Date.now() });
-  if (h.length > 100) h = h.slice(0, 100);
-  saveHistory(h);
-}
-function clearHistory(){
-  saveHistory([]);
-  renderHistory();
-}
-function fmtTime(ts){
-  const d = new Date(ts);
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  if (sameDay) return `今日 ${hh}:${mm}`;
-  return `${d.getMonth()+1}/${d.getDate()} ${hh}:${mm}`;
-}
-function renderHistory(){
-  const list = document.getElementById('historyList');
-  const clearBtn = document.getElementById('historyClear');
-  const h = loadHistory();
-  if (h.length === 0){
-    list.innerHTML = '<div class="history-empty">まだ履歴はありません</div>';
-    clearBtn.style.visibility = 'hidden';
-    return;
-  }
-  clearBtn.style.visibility = 'visible';
-  list.innerHTML = h.map(item => {
-    const loc = locate(String(item.n));
-    if (!loc) return '';
-    const rowLabel = loc.row===1?'最上段':loc.row===7?'最下段':loc.row===4?'中央段':loc.row<=3?`上から${loc.row}段目`:`下から${8-loc.row}段目`;
-    const colLabel = loc.within===1?'左端':loc.within===loc.seg.n?'右端':loc.within<=(loc.seg.n+1)/2?`左から${loc.within}番目`:`右から${loc.seg.n-loc.within+1}番目`;
-    return `<div class="history-item" onclick="openFromHistory(${item.n})">
-      <div class="hi-main">
-        <span class="hi-room"><span style="color:var(--accent);font-weight:700;">${item.n}</span> 号室のポスト</span>
-        <span class="hi-loc">${loc.seg.label}</span>
-        <span class="hi-within">${rowLabel}・${colLabel}</span>
-      </div>
-      <span class="hi-time">${fmtTime(item.t)}</span>
-    </div>`;
-  }).join('');
-}
-function openFromHistory(n){
-  const loc = locate(String(n));
-  if (loc) openModal(loc, false);
-}
-
 /* ===== 一覧 ===== */
 function renderList(){
   const content = document.getElementById('listContent');
@@ -408,14 +322,14 @@ function openListRoom(n){
 }
 
 /* ===== タブ / スライダー ===== */
-const TABS = ['search','history','list'];
+const TABS = ['search','list'];
 let curTab = 0;
 const slider = document.getElementById('slider');
 
 function setSliderPos(idx, animate){
   if (animate) slider.classList.remove('no-transition');
   else slider.classList.add('no-transition');
-  slider.style.transform = `translateX(${-idx * 100/3}%)`;
+  slider.style.transform = `translateX(${-idx * 100/2}%)`;
 }
 
 function switchTab(tab){
@@ -424,7 +338,6 @@ function switchTab(tab){
   curTab = idx;
   TABS.forEach((t,i) => document.getElementById('tab-'+t).classList.toggle('active', i===idx));
   setSliderPos(idx, true);
-  if (tab==='history') renderHistory();
   if (tab==='list') renderList();
 }
 
@@ -460,8 +373,8 @@ function switchTab(tab){
     }
     if (locked === 'h') {
       document.body.classList.add('swiping');
-      const base = -curTab * 100/3;
-      const pct = dx / main.offsetWidth * 100/3;
+      const base = -curTab * 100/2;
+      const pct = dx / main.offsetWidth * 100/2;
       const next = curTab + (dx < 0 ? 1 : -1);
       if (next < 0 || next >= TABS.length) return;
       slider.style.transform = `translateX(${base + pct}%)`;
@@ -506,11 +419,10 @@ function closeModal(){
   document.body.style.overflow = '';
   clearNum();
 }
-function openModal(loc, record=true){
+function openModal(loc){
   document.getElementById('result').innerHTML = drawMap(loc);
   document.getElementById('modal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  if (record) addHistory(loc.n);
 }
 let toastTimer;
 function showToast(msg){
