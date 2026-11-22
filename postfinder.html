@@ -7,8 +7,8 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
   :root {
-    --bg: #f7f6f3; --surface: #ffffff; --border: #e0ddd7; --text: #1a1917;
-    --sub: #8a8780; --key-bg: #eceae5; --key-active: #d4d1ca; --accent: #c8a97a;
+    --bg: #ffffff; --surface: #ffffff; --border: #dde3ea; --text: #1a1a1a;
+    --sub: #7d8896; --key-bg: #eef2f6; --key-active: #d6dfe9; --accent: #3f6a96;
     --pink: #c9426b; --yellow: #d4a72c; --dim: #2a2a2a;
   }
   body {
@@ -20,9 +20,7 @@
     width: 100%; background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
-  .header-top { padding: 16px 20px 12px; text-align: center; position: relative; }
-  /* 収集の料金表から開いた時だけ出す。押すと収集に戻る */
-  .pf-close { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: none; border-radius: 10px; background: var(--key-bg); color: var(--text); font-size: 20px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .header-top { padding: 16px 20px 12px; text-align: center; }
   header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.04em; color: var(--sub); }
   .tabs { display: flex; border-top: 1px solid var(--border); }
   .tab-btn {
@@ -66,7 +64,7 @@
   }
   .number-value.empty { color: var(--border); }
   .clear-btn {
-    background: #b0aca5; border: none; color: #fff; font-size: 16px; font-weight: 700;
+    background: #a7b3c0; border: none; color: #fff; font-size: 16px; font-weight: 700;
     cursor: pointer; width: 28px; height: 28px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     -webkit-tap-highlight-color: transparent;
@@ -102,7 +100,7 @@
   .confirm-btn { width: 100%; margin-top: 8px; padding: 20px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 20px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .toast {
     position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-    background: rgba(30,28,26,0.88); color: #fff; font-size: 14px; font-weight: 500;
+    background: rgba(24,32,42,0.88); color: #fff; font-size: 14px; font-weight: 500;
     padding: 10px 20px; border-radius: 20px; white-space: nowrap;
     animation: toastIn 0.2s ease; z-index: 200;
   }
@@ -149,7 +147,7 @@
 </head>
 <body>
 <header>
-  <div class="header-top"><h1>現場1 — ポスト位置</h1><button class="pf-close" id="pfClose" aria-label="閉じる" hidden>✕</button></div>
+  <div class="header-top"><h1>現場1 — ポスト位置</h1></div>
   <div class="tabs">
     <button class="tab-btn active" id="tab-search" onclick="switchTab('search')">検索</button>
     <button class="tab-btn" id="tab-history" onclick="switchTab('history')">履歴</button>
@@ -282,17 +280,17 @@ function drawMap(loc) {
     const cnt = seg.n;
     const isHitFace = (loc.segIdx === si);
     const lp = labelPos[si];
-    faceLabels += `<text x="${lp.x}" y="${lp.y}" fill="${isHitFace ? '#c8a97a' : '#aaa'}" font-size="13" font-weight="700" text-anchor="middle">${si+1}</text>`;
+    faceLabels += `<text x="${lp.x}" y="${lp.y}" fill="${isHitFace ? '#3f6a96' : '#aaa'}" font-size="13" font-weight="700" text-anchor="middle">${si+1}</text>`;
     for (let k=1; k<=cnt; k++){
       const t = (k-0.5)/cnt;
       const cx = ln.x1 + (ln.x2-ln.x1)*t;
       const cy = ln.y1 + (ln.y2-ln.y1)*t;
       const isHit = (loc.segIdx===si && loc.within===k);
       if (isHit){
-        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="#c8a97a"><animate attributeName="r" values="6;9;6" dur="1.6s" repeatCount="indefinite"/></circle>`;
-        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="none" stroke="#c8a97a" stroke-width="2"><animate attributeName="r" values="6;22" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.7;0" dur="1.6s" repeatCount="indefinite"/></circle>`;
+        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="#3f6a96"><animate attributeName="r" values="6;9;6" dur="1.6s" repeatCount="indefinite"/></circle>`;
+        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="6" fill="none" stroke="#3f6a96" stroke-width="2"><animate attributeName="r" values="6;22" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.7;0" dur="1.6s" repeatCount="indefinite"/></circle>`;
       } else {
-        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${isHitFace ? '#c8a97a' : '#d6cfc2'}"/>`;
+        cells += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${isHitFace ? '#3f6a96' : '#c9d4df'}"/>`;
       }
     }
   });
@@ -550,10 +548,6 @@ function update(){
     }
   }
 }
-</script>
-<script>
-// 収集の中（iframe）で開いた時だけ✕を出す
-if (window.parent !== window) { const c = document.getElementById('pfClose'); c.hidden = false; c.onclick = () => window.parent.closePF(); }
 </script>
 </body>
 </html>

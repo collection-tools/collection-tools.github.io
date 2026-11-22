@@ -312,12 +312,13 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 .bbtn.reset-all { border-color: var(--red); color: var(--red); background: transparent; }
 
 /* ドロワー（料金表） */
-/* 「料金表」の右の封筒（ポスト位置アプリのアイコンと同じ形）：押すとポスト位置（postfinder.html）を全面に重ねる */
-#drawer .drawer-head h1 { flex: none; }
-.pf-btn { width: 44px; height: 44px; margin-right: auto; border: none; border-radius: 10px; background: var(--card); color: var(--text); display: grid; place-items: center; cursor: pointer; }
-.pf { position: fixed; inset: 0; z-index: 30; background: #f7f6f3; padding-top: env(safe-area-inset-top); display: none; }
-.pf.on { display: block; }
-.pf iframe { width: 100%; height: 100%; border: 0; display: block; }
+/* 料金表とポスト位置をタブで切りかえる。ポスト位置（postfinder.html）は最初に開いた時だけ読みこむ */
+.dtabs { flex: 1; display: flex; align-items: stretch; gap: 4px; align-self: stretch; margin-bottom: -10px; }
+.dtab { border: none; background: none; font: inherit; font-size: 18px; font-weight: 700; color: var(--text2); padding: 0 12px; border-bottom: 2px solid transparent; display: grid; place-items: center; cursor: pointer; }
+.dtab.on { color: var(--text); border-bottom-color: var(--text); }
+.dpane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.dpane[hidden] { display: none; }
+.dpane iframe { flex: 1; width: 100%; border: 0; display: block; }
 .scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 20; opacity: 0; pointer-events: none; }
 .scrim.on { opacity: 1; pointer-events: auto; }
 .drawer {
@@ -549,15 +550,15 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer">
   <div class="drawer-head">
-    <h1>料金表</h1>
-    <button class="pf-btn" id="pfBtn" aria-label="ポスト位置"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M3.5 6.5l7.2 6.3a2 2 0 0 0 2.6 0l7.2-6.3"/><path d="M3.8 18l6-5.6"/><path d="M20.2 18l-6-5.6"/></svg></button>
+    <div class="dtabs"><button class="dtab on" id="tabPrice">料金表</button><button class="dtab" id="tabPost" aria-label="ポスト位置"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M3.5 6.5l7.2 6.3a2 2 0 0 0 2.6 0l7.2-6.3"/><path d="M3.8 18l6-5.6"/><path d="M20.2 18l-6-5.6"/></svg></button></div>
     <button class="burger" data-close aria-label="閉じる">✕</button>
   </div>
+  <div class="dpane" id="panePrice">
   <div class="pager" id="pager"></div>
   <div class="pager-foot" id="pagerFoot"></div>
+  </div>
+  <div class="dpane" id="panePost" hidden></div>
 </aside>
-
-<div class="pf" id="pf"></div>
 
 <!-- 金額登録：電卓。左上のテンキーボタンで、足すテンキーが開く -->
 <div class="sheet tall late-press" id="calcSheet">
@@ -1852,15 +1853,20 @@ function closeAll() {
   document.querySelectorAll('.drawer.on, .sheet.on').forEach(el => el.classList.remove('on'));
   scrim.classList.remove('on'); document.body.classList.remove('lock');
 }
-// ポスト位置：最初に押した時だけ読みこむ。閉じても料金表はそのまま
-const pf = document.getElementById('pf');
-document.getElementById('pfBtn').onclick = () => {
-  if (!pf.firstChild) pf.innerHTML = '<iframe src="postfinder.html" title="ポスト位置"></iframe>';
-  pf.classList.add('on');
-};
-window.closePF = () => pf.classList.remove('on');
+// ドロワーのタブ：料金表とポスト位置。ポスト位置は最初に開いた時だけ読みこむ
+const panePost = document.getElementById('panePost');
+function drawerTab(post) {
+  document.getElementById('tabPrice').classList.toggle('on', !post);
+  document.getElementById('tabPost').classList.toggle('on', post);
+  document.getElementById('panePrice').hidden = post;
+  panePost.hidden = !post;
+  if (post && !panePost.firstChild) panePost.innerHTML = '<iframe src="postfinder.html" title="ポスト位置"></iframe>';
+}
+document.getElementById('tabPrice').onclick = () => drawerTab(false);
+document.getElementById('tabPost').onclick = () => drawerTab(true);
 document.getElementById('burger').onclick = () => {
   openPanel('drawer');
+  drawerTab(false); // いつも料金表から
   pager.querySelectorAll('.page').forEach(p => p.scrollTop = 0);
   showPage(1); // いつも1ページ目から
 };
