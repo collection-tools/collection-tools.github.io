@@ -1,6 +1,6 @@
 // 中身を変えたら CACHE_NAME の数字を上げる（上げないと古いままになる）
-const CACHE_NAME = 'shuushuu3-164'; // v3 は shuushuu3- で始める（元の版・v2と混ざらないように）
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'shuushuu3-165'; // v3 は shuushuu3- で始める（元の版・v2と混ざらないように）
+const ASSETS = ['./', './index.html', './postfinder.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))));
