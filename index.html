@@ -245,7 +245,7 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 .prow-line .prow-btns .tbtn { width: 66px; padding-left: 0; padding-right: 0; } /* 375px幅でも名前（マッサージ機）が折り返さない幅 */
 .prow-name { white-space: nowrap; }
 .prow-under { margin-top: 8px; }
-.neq { grid-column: 1 / -1; display: flex; gap: 6px; }
+.neq { display: flex; gap: 6px; }
 /* 名前のボタンの右に「▾」：左を押すとその品目、▾を押すと仲間の品目（ランドリーラック）が下に出る */
 .tsplit { position: relative; display: flex; }
 .tsplit > .tbtn { flex: 1; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
@@ -254,7 +254,8 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 .tmenu { display: none; position: absolute; z-index: 6; right: 0; top: calc(100% + 4px); min-width: 100%; flex-direction: column; gap: 6px; padding: 6px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
 .tmenu.on { display: flex; }
 .tmenu .tbtn { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
-.neq .tbtn { flex: 1 1 auto; } /* 文字の幅を基準に、残りを同じだけ分ける＝どのボタンも左右の余白が等しい */
+.neq > .tbtn, .neq > .tsplit { flex: 1 1 auto; }
+.tsplit > .tbtn { flex: 1 1 auto; } /* 文字の幅を基準に、残りを同じだけ分ける＝どのボタンも左右の余白が等しい */
 .prow .free { margin-top: 8px; }
 .prow .kind-pop.inline { margin: 8px 0 0; }
 .tiers { display: grid; gap: 6px; }
@@ -1168,9 +1169,8 @@ function restHTML() {
   const nbtn = (x, st, nm) => x.menu && x.menu.length
     ? `<div class="tsplit"${st}><button class="tbtn" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${nm}</span></button><button class="tsub" data-tmenu aria-label="${x.menu.map(m => m.nm).join('・')}を選ぶ"><svg viewBox="0 0 12 8" width="12" height="8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1.5l5 5 5-5"/></svg></button><div class="tmenu">${x.menu.map(m => `<button class="tbtn" data-tier="${gi}-${m.ii}-${m.ti}"><span class="p">${m.nm}</span></button>`).join('')}</div></div>`
     : `<button class="tbtn"${st} data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${nm}</span></button>`;
-  const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:repeat(6,1fr)">${rowsOf.map(r => r.eq
-    ? `<div class="neq">${r.eq.map(x => nbtn(x, '', x.nm)).join('')}</div>`
-    : r.map(x => nbtn(x, ` style="grid-column:span ${6 / r.length}"`, r.length >= 3 ? halfIfLong(x.nm) : x.nm)).join('')).join('')}</div></div>`;
+  // どの行も、文字の長さに合わせた幅＋残りを同じだけ分ける（行の中のボタンは、左右の余白が等しい）
+  const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:1fr">${rowsOf.map(r => `<div class="neq">${(r.eq || r).map(x => nbtn(x, '', x.nm)).join('')}</div>`).join('')}</div></div>`;
   const rowCards = rows.map(({ it, ii, tis, title }) => {
     const long = it.kinds || it.free || tis.length > 3; // 種類・名前の欄があるか、値段が4つなら、ボタンは名前の下の段に
     const btns = tis.map(x => yenBtn(ii, x)).join('');
