@@ -754,7 +754,8 @@ const GROUPS = [
       // 運動器具は、たまに使うものの行の中でも下の方（その他のすぐ上）に置く（2026-11-23）
       // 運動器具：1枚のカード。上の段は筋トレ器具・ダンベルを種類で選んで金額、下の段は金額が決まっているので品名のボタン
       // 種類は上の段（name の無いボタン）にだけ付く
-      { name: '運動器具', title: '運動器具', short: '種類', fold: true, kinds: ['筋トレ器具', 'ダンベル'], rows: [4, 2, 1], tiers: [
+      // 筋トレ器具が親・ダンベルが子（テーブルと炬燵・ガラスの関係と同じ）。何も選ばなければ筋トレ器具。見出しは無し
+      { name: '筋トレ器具', title: '', short: '筋トレ器具', kinds: ['ダンベル'], tiers: [
         { price: 900,  cond: '900',  yen: true },
         { price: 1300, cond: '1300', yen: true },
         { price: 2300, cond: '2300', yen: true },
@@ -1134,7 +1135,7 @@ function restHTML() {
     const fixed = all.filter(({ t }) => !(it.yen || t.yen) && PRICE_OF_LABEL.get(t.label || t.name || it.name));
     fixed.forEach(x => named.push({ ...x, ii, nm: (x.t.btn || x.t.cond).replace(/<br>.*/, '') }));
     const others = all.filter(x => !fixed.includes(x));
-    if (others.length) rows.push({ it, ii, tis: others, title: it.yen || others.some(x => x.t.yen) ? (it.title || it.name) : (others[0].t.label || others[0].t.name || it.name) });
+    if (others.length) rows.push({ it, ii, tis: others, title: it.yen || others.some(x => x.t.yen) ? (it.title === '' ? '' : (it.title || it.name)) : (others[0].t.label || others[0].t.name || it.name) });
   });
   // 名前で決まるものは、仲間ごとに1行にまとめる（見出しは付けない）。3つの行はカタカナが長ければ半角にして収める
   // ここに無い品名（あとで足したもの）は、最後の行に3つずつ並ぶ
@@ -1154,10 +1155,10 @@ function restHTML() {
   const rowCards = rows.map(({ it, ii, tis, title }) => {
     const long = it.kinds || it.free || tis.length > 3; // 種類・名前の欄があるか、値段が4つなら、ボタンは名前の下の段に
     const btns = tis.map(x => yenBtn(ii, x)).join('');
-    return `<div class="item prow${it.kinds ? ' fold open' : ''}">
+    return `<div class="item prow">
       <div class="prow-line"><span class="prow-name">${title}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}</span>${long ? '' : `<span class="prow-btns" style="grid-template-columns:repeat(${tis.length},1fr)">${btns}</span>`}</div>
       ${it.free ? `<input class="free" data-free="${gi}-${ii}" type="text" placeholder="${it.kinds ? '種類に無い時は、品目の名前' : '品目の名前'}" autocomplete="off">` : ''}
-      ${it.kinds ? `<div class="kind-pop inline" data-pop="${gi}-${ii}">${it.kinds.map(k => `<button data-pick="${k}">${k}</button>`).join('')}</div>` : ''}
+      ${it.kinds ? `<div class="kind-pop" data-pop="${gi}-${ii}">${['', ...it.kinds].map(k => `<button data-pick="${k}"${k ? '' : ' class="on"'}>${k || it.short}</button>`).join('')}</div>` : ''}
       ${long ? `<div class="prow-btns prow-under" style="grid-template-columns:repeat(${tis.length},1fr)">${btns}</div>` : ''}
     </div>`;
   }).join('');
