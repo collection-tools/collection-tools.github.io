@@ -1709,10 +1709,12 @@ document.getElementById('redo').onclick = () => {
 document.getElementById('calcOpen').onclick = () => openPanel('calcSheet');
 document.getElementById('calcUndo').onclick = () => document.getElementById('undo').click();
 document.getElementById('calcReset').onclick = () => {
-  // 3台目と4台目は組：片方をリセットすると、もう片方もまっさらにする（済の台はそのまま。5台目は関係ない）
+  // 最後の2台は組：1〜4台目で済になっていないのが2台だけの時、片方をリセットするともう片方もまっさらにする
+  // （最後の1台は引き算で出るので、それを自分で計算し直して確かめたい時のため。5台目は最初に決まるので入れない）
   // 打ち直した方が決まれば、もう片方には総量からの残りが自動で入る
-  const c = state.cur, o = c === 2 ? 3 : c === 3 ? 2 : -1;
-  const pair = o >= 0 && state.dais[o] && !state.dais[o].done && state.dais[o].pts.length > 0;
+  const c = state.cur, open = [0, 1, 2, 3].filter(i => state.dais[i] && !state.dais[i].done);
+  const o = c < 4 && open.length === 2 && open.includes(c) ? open.find(i => i !== c) : -1;
+  const pair = o >= 0 && state.dais[o].pts.length > 0;
   if (!cur().pts.length && !pair) return;
   change(() => { cur().pts = []; if (pair) state.dais[o].pts = []; });
 };
