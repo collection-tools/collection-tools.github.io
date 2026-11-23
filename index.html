@@ -56,10 +56,9 @@ header {
 .head-title b { color: var(--text); font-size: 17px; }
 /* 「1台目 クリア」を1列に。クリアは全ての台を消す */
 .head-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-/* 「1台目 🔒 共有」 */
 #headTitle { flex: none; }
 /* 南京錠：普段はグレー。押すとロック（黒）。ロック中は、消す・戻す・ひくが効かない */
-.lock-btn { flex: none; width: 36px; height: 30px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--text2); opacity: .5; display: grid; place-items: center; cursor: pointer; }
+.lock-btn { flex: none; width: 40px; height: 40px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--text2); opacity: .5; display: grid; place-items: center; cursor: pointer; }
 .lock-btn.on { background: var(--accent); color: var(--on-accent); opacity: 1; }
 .head-reset { flex: none; border: 1px solid var(--red); border-radius: 8px; background: transparent; color: var(--red); font: inherit; font-size: 12px; font-weight: 700; padding: 1px 8px; cursor: pointer; }
 .head-day { text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; }
@@ -533,7 +532,8 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 
 <header>
   <button class="burger" id="burger" aria-label="料金表">☰</button>
-  <div class="head-title"><span id="headTitle"></span><button class="lock-btn" id="lockBtn" aria-label="ロック" aria-pressed="false"></button><button class="room-btn" id="roomBtn" aria-label="ルームを選ぶ"></button></div>
+  <div class="head-title"><span id="headTitle"></span><button class="room-btn" id="roomBtn" aria-label="ルームを選ぶ"></button></div>
+  <button class="lock-btn" id="lockBtn" aria-label="ロック" aria-pressed="false"></button>
   <button class="head-rest" id="restBtn" aria-label="今日の総量を打つ"><span id="restLabel"></span><b id="dayTotal"></b></button>
 </header>
 
@@ -1141,8 +1141,8 @@ function listHTML(groups) {
 let lastPress = null;
 // 南京錠：ロック中は、消す・戻す・ひく・大物の追加・現場の行（直す・場所・移す・✕・並べ替え）を受けつけない（点数を足す・打つ・済は今まで通り）。端末ごとに覚える
 const LOCK_SVG = {
-  off: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
-  on: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  off: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
+  on: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
 };
 let lockOn = false;
 try { lockOn = localStorage.getItem('shuushuu3-lock') === '1'; } catch (e) {}
