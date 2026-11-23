@@ -56,9 +56,12 @@ header {
 .head-title b { color: var(--text); font-size: 17px; }
 /* 「1台目 クリア」を1列に。クリアは全ての台を消す */
 .head-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-/* 「1台目 11/16(月) 共有」。右上が広がって入り切らない時は、日付のほうを詰める */
+/* 「1台目 🔒 共有」 */
 #headTitle { flex: none; }
-#headDate { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 南京錠：普段はグレー。押すとロック（黒）。ロック中は、消す・戻す・ひくが効かない */
+.lock-btn { flex: none; width: 36px; height: 30px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--text2); opacity: .5; display: grid; place-items: center; cursor: pointer; }
+.lock-btn.on { background: var(--accent); color: var(--on-accent); opacity: 1; }
+body.lockon #resetAll, body.lockon #undo, body.lockon #calcUndo, body.lockon #calcReset, body.lockon #subBtn, body.lockon .sdel, body.lockon [data-unbig], body.lockon .room-del { opacity: .35; }
 .head-reset { flex: none; border: 1px solid var(--red); border-radius: 8px; background: transparent; color: var(--red); font: inherit; font-size: 12px; font-weight: 700; padding: 1px 8px; cursor: pointer; }
 .head-day { text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; }
 .head-day b { display: block; font-size: 17px; color: var(--text); }
@@ -531,7 +534,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 
 <header>
   <button class="burger" id="burger" aria-label="料金表">☰</button>
-  <div class="head-title"><span id="headTitle"></span><span id="headDate"></span><button class="room-btn" id="roomBtn" aria-label="ルームを選ぶ"></button></div>
+  <div class="head-title"><span id="headTitle"></span><button class="lock-btn" id="lockBtn" aria-label="ロック" aria-pressed="false"></button><button class="room-btn" id="roomBtn" aria-label="ルームを選ぶ"></button></div>
   <button class="head-rest" id="restBtn" aria-label="今日の総量を打つ"><span id="restLabel"></span><b id="dayTotal"></b></button>
 </header>
 
@@ -864,7 +867,6 @@ function render() {
 
   document.getElementById('headTitle').innerHTML =
     `<b>${daime(state.cur)}</b>`;
-  { const d = new Date(); document.getElementById('headDate').textContent = `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]})`; }
   { const b = document.getElementById('roomBtn'); b.textContent = room ? '共有' : 'この端末'; b.className = 'room-btn' + (room ? ' shared' : '') + (room && !online ? ' off' : ''); }
   if (document.getElementById('roomSheet').classList.contains('on')) renderRooms();
   // 総量を打ったら「479p/1070p」（見出しは残り/総量）。今日の合計そのものは出さない
@@ -1138,6 +1140,26 @@ function listHTML(groups) {
 // 変える時はいつもここを通す（1つ戻すのため）
 // 最後に指を置いたボタン（済の台を動かそうとした時に、そのボタンを震わせる）
 let lastPress = null;
+// 南京錠：ロック中は、消す・戻す・ひくを受けつけない（足す・打つ・済・場所・移すは今まで通り）。端末ごとに覚える
+const LOCK_SVG = {
+  off: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
+  on: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+};
+let lockOn = false;
+try { lockOn = localStorage.getItem('shuushuu3-lock') === '1'; } catch (e) {}
+function paintLock() {
+  const b = document.getElementById('lockBtn');
+  b.innerHTML = lockOn ? LOCK_SVG.on : LOCK_SVG.off;
+  b.classList.toggle('on', lockOn); b.setAttribute('aria-pressed', lockOn);
+  document.body.classList.toggle('lockon', lockOn);
+}
+// 消す操作の入口で呼ぶ。ロック中なら押したボタンを震わせて true を返す（呼んだ側はそこでやめる）
+function lockBlock(btn) {
+  if (!lockOn) return false;
+  const b = btn || (lastPress && lastPress.closest && lastPress.closest('button'));
+  if (b) shakeNg(b); else if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+  return true;
+}
 document.addEventListener('pointerdown', e => { lastPress = e.target; }, true);
 function change(fn) {
   if (state.date !== today()) { state.date = today(); history = []; redo = []; }
@@ -1258,6 +1280,7 @@ document.getElementById('bigList').addEventListener('click', e => {
   }
   if (e.target.closest('[data-smove]')) { openMoveMenu(e.target.closest('[data-smove]'), s); return; }
   if (e.target.closest('[data-sdel]')) {
+    if (lockBlock(e.target.closest('[data-sdel]'))) return;
     const doDel = () => change(() => { cur().bigs = cur().bigs.filter(x => x.s !== s); });
     buzz();
     if (el.classList.contains('gone')) return;
@@ -1348,6 +1371,7 @@ document.addEventListener('click', e => {
     change(() => { if (l[i][f]) delete l[i][f]; else l[i][f] = true; });
     buzz();
   } else if (b.dataset.unbig != null) {
+    if (lockBlock(b)) return;
     const l = cur().bigs, i = l.findLastIndex(e => e.s === targetS() && bigLabel(e) === b.dataset.unbig);
     if (i >= 0) change(() => l.splice(i, 1));
   } else if (b.dataset.dai != null) {
@@ -1610,7 +1634,7 @@ document.addEventListener('pointerdown', e => {
 }, true);
 document.addEventListener('click', e => { if (logSwallow) { logSwallow = false; e.stopPropagation(); e.preventDefault(); } }, true);
 document.getElementById('doneBtn').onclick = () => change(() => { const d = cur(); if (d.done) delete d.done; else { fixAuto(); d.done = true; } }); // 残りを自動で見せている台は、その数字で確定してから済にする
-document.getElementById('subBtn').onclick = () => { subMode = !subMode; paintSub(); document.getElementById('padAdd').classList.toggle('still', !padWillMove()); };
+document.getElementById('subBtn').onclick = () => { if (!subMode && lockBlock(document.getElementById('subBtn'))) return; subMode = !subMode; paintSub(); document.getElementById('padAdd').classList.toggle('still', !padWillMove()); };
 // 電卓の大きい数字（スカウター）を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字はスカウターに直に入る
 // 閉じる（もう一度スカウターを押す・閉じる・✕・下に払う）と、打った数字がそのままこの台の点数になる。何も打たなければ変えない
 function padEl() { return document.querySelector('.pad'); }
@@ -1662,6 +1686,7 @@ const putDai = (st, k, v) => { while (st.dais.length <= k) st.dais.push(newDai()
 // 1つ戻す：いま見ている台の、最後の変更だけを戻す（ほかの台で後からした変更はそのまま。見ている台も動かさない）
 // その変更で一緒に動いた台（3・4台目の相手、残りの台、全てリセット）と総量も、その時の分だけ戻す
 document.getElementById('undo').onclick = () => {
+  if (lockBlock()) return;
   const J = x => JSON.stringify(x), c = state.cur;
   const i = undoStep();
   if (i < 0) return;
@@ -1709,6 +1734,7 @@ document.getElementById('redo').onclick = () => {
 document.getElementById('calcOpen').onclick = () => openPanel('calcSheet');
 document.getElementById('calcUndo').onclick = () => document.getElementById('undo').click();
 document.getElementById('calcReset').onclick = () => {
+  if (lockBlock(document.getElementById('calcReset'))) return;
   // 最後の2台は組：1〜4台目で済になっていないのが2台だけの時、片方をリセットするともう片方もまっさらにする
   // （最後の1台は引き算で出るので、それを自分で計算し直して確かめたい時のため。5台目は最初に決まるので入れない）
   // 打ち直した方が決まれば、もう片方には総量からの残りが自動で入る
@@ -1720,6 +1746,7 @@ document.getElementById('calcReset').onclick = () => {
 };
 // 台の行き来は「n台目」のチップで。全てリセットだけ確認を出す。押し間違えたら「1つ戻す」で元に戻る
 document.getElementById('resetAll').onclick = () => {
+  if (lockBlock(document.getElementById('resetAll'))) return;
   if (!state.goal && !state.dais.some(d => d.pts.length || d.bigs.length)) return;
   ask('全ての台の金額・大物と、\n今日の総量を消します。', () => {
     change(() => { const c = state.cur; state = newDay(); state.cur = c; }); // 今日の総量も消す
@@ -2249,6 +2276,12 @@ function moveRoom(r, bring) {
   history = []; redo = []; shownAmount = null;
   closeAll(); subscribe(); buzz();
 }
+document.getElementById('lockBtn').onclick = () => {
+  lockOn = !lockOn;
+  try { localStorage.setItem('shuushuu3-lock', lockOn ? '1' : '0'); } catch (e) {}
+  paintLock(); buzz();
+};
+paintLock();
 document.getElementById('roomBtn').onclick = () => { renderRooms(); document.getElementById('roomIn').value = ''; openPanel('roomSheet'); };
 document.getElementById('roomList').addEventListener('click', e => {
   const go = e.target.closest('[data-room]'), del = e.target.closest('[data-del]');
@@ -2256,6 +2289,7 @@ document.getElementById('roomList').addEventListener('click', e => {
   else if (del) {
     // 一覧から外すだけ（クラウドの中身は消えない。同じコードを打てばまた入れる）
     // いまいる共有コードを外す時は、先にこの端末へ移る（また入りたければ同じコードを打てばいい）
+    if (lockBlock(del)) return;
     const r = del.dataset.del;
     if (r === room) { moveRoom(''); openPanel('roomSheet'); }
     rooms = rooms.filter(x => x !== r); saveRooms();
