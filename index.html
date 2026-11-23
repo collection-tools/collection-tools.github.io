@@ -441,8 +441,8 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 /* 他の台へ移す（収集2と同じ） */
 [hidden] { display: none !important; }
 .pad-move { margin-bottom: 8px; text-align: right; }
-.pad-sumi { margin: 0 4px 10px; text-align: right; font-size: 15px; font-weight: 700; color: var(--text2); }
-.pad-sumi b { font-size: 26px; font-weight: 800; color: var(--text); margin: 0 1px 0 6px; }
+.pad-sumi { flex: none; margin-right: 6px; font-size: 15px; font-weight: 700; color: var(--text2); }
+.pad-sumi b { font-size: 24px; font-weight: 800; color: var(--text); margin: 0 1px 0 6px; }
 .pad-sumi[hidden] { display: none; }
 .pad-redo { font: inherit; font-size: 12px; color: var(--text2); background: none; border: none; text-decoration: underline; padding: 4px 0; cursor: pointer; }
 .pad-tomove { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; width: 82%; margin: 10px auto 0; }
@@ -600,13 +600,11 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 
 <!-- 24p以上を打つ画面 -->
 <div class="sheet center" id="padSheet">
-  <div class="sheet-head"><h1 id="padTitle">容積ポイントを打つ</h1><button class="burger" data-close aria-label="閉じる">✕</button></div>
+  <div class="sheet-head"><h1 id="padTitle">容積ポイントを打つ</h1><span class="pad-sumi" id="padSumi" hidden></span><button class="burger" data-close aria-label="閉じる">✕</button></div>
   <div class="sheet-body">
     <div class="pad">
       <!-- 移す時だけ：台の点数を打つ画面に戻る（移す先は見出しに出す） -->
       <div class="pad-move" id="padMove"><button class="pad-redo" id="padRedo">点数を打つ画面に戻る</button></div>
-      <!-- 今日の総量の時だけ：済にした台の点数の合計 -->
-      <div class="pad-sumi" id="padSumi" hidden></div>
       <div class="pad-top">
         <div class="pad-disp" id="padDisp"></div>
         <button class="pad-add" id="padAdd"><span id="padAddTx">＋</span></button>
