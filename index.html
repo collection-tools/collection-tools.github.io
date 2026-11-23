@@ -1080,7 +1080,7 @@ function buildButtons() {
   document.getElementById('groups').innerHTML = GROUPS.map((g, gi) =>
     `<section>${g.items.map((it, ii) =>
       `<div class="item${it.fold ? ' fold open' : ''}">
-        ${it.title === '' ? '' : `<div class="item-name"><span>${it.fold ? it.title : it.title || it.name}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}${it.kai ? `<button class="kai" data-kai="${gi}-${ii}">解体済</button>` : ''}${it.ko ? `<button class="kai" data-kai="${gi}-${ii}" data-flag="ko">子供用</button>` : ''}</span></div>`}
+        ${it.title === '' ? '' : `<div class="item-name"><span>${it.fold ? it.title : it.title || it.name}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}${it.kai ? `<button class="kai" data-kai="${gi}-${ii}">解体済</button>` : ''}${it.ko ? `<button class="kai" data-kai="${gi}-${ii}" data-flag="ko">子</button>` : ''}</span></div>`}
         ${it.free ? `<input class="free" data-free="${gi}-${ii}" type="text" placeholder="${it.kinds ? '種類に無い時は、品目の名前' : '品目の名前'}" autocomplete="off">` : ''}
         ${it.kinds && it.fold ? `<div class="kind-pop inline" data-pop="${gi}-${ii}">${it.kinds.map(k =>
           `<button data-pick="${k}">${k}</button>`).join('')}</div>` : it.kinds ? `<div class="kind-pop" data-pop="${gi}-${ii}">${['', ...it.kinds].map(k =>
