@@ -804,7 +804,7 @@ const cur = () => state.dais[state.cur];
 // （打っておくわけではないので、ほかの台を直せば一緒に変わる。その台に打てば打った数字になる）
 function autoDai() {
   if (!state.goal) return -1;
-  const empty = state.dais.map((d, i) => sum(d) ? -1 : i).filter(i => i >= 0);
+  const empty = state.dais.map((d, i) => sum(d) || d.noAuto ? -1 : i).filter(i => i >= 0); // noAuto：リセットで空にした台は、残りを自動で入れない
   const rest = state.goal * 100 - state.dais.reduce((a, d) => a + sum(d), 0);
   return empty.length === 1 && rest > 0 ? empty[0] : -1;
 }
@@ -1709,8 +1709,10 @@ document.getElementById('redo').onclick = () => {
 document.getElementById('calcOpen').onclick = () => openPanel('calcSheet');
 document.getElementById('calcUndo').onclick = () => document.getElementById('undo').click();
 document.getElementById('calcReset').onclick = () => {
-  if (!cur().pts.length) return;
-  change(() => { cur().pts = []; });
+  // 残りが自動で入っている台（打っていないのに点数がある台）も、リセットで0にできる。そのあとは自動で入れない
+  const auto = state.cur === autoDai();
+  if (!cur().pts.length && !auto) return;
+  change(() => { cur().pts = []; if (auto) cur().noAuto = true; });
 };
 // 台の行き来は「n台目」のチップで。全てリセットだけ確認を出す。押し間違えたら「1つ戻す」で元に戻る
 document.getElementById('resetAll').onclick = () => {
