@@ -1712,6 +1712,7 @@ document.getElementById('undo').onclick = () => {
 
 // 進む：いま見ている台で、1つ戻すで取り消した変更をやり直す（一緒に戻した台と総量も）
 document.getElementById('redo').onclick = () => {
+  if (lockBlock()) return;
   const c = state.cur, j = redo.findLastIndex(r => r.c === c);
   if (j < 0) return;
   const r = redo.splice(j, 1)[0];
@@ -2246,7 +2247,8 @@ let carry = false; // ローカルから持ってきた中身を、共有側の�
 function goRoom(r) {
   if (r === room) { closeAll(); return; }
   // ローカルから共有へ移る時、いまの中身があれば「持っていく？」と聞く。持っていくなら共有側の今日の分は上書きされる
-  if (r && !room && hasContent(state)) {
+  // ロック中は持っていかない（共有側の今日の分を書き換えない）。見に行くだけ
+  if (r && !room && hasContent(state) && !lockOn) {
     const from = JSON.parse(JSON.stringify(state));
     ask(`いまのこの端末の台と総量を、「${r}」に持っていく？\n共有側に今日の分があれば、上書きされて消える。`, () => {
       if (!hasPlace(from)) { moveRoom(r, from); return; }
