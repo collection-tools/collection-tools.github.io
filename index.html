@@ -1137,25 +1137,21 @@ function restHTML() {
     const others = all.filter(x => !fixed.includes(x));
     if (others.length) rows.push({ it, ii, tis: others, title: it.yen || others.some(x => x.t.yen) ? (it.title === '' ? '' : (it.title || it.name)) : (others[0].t.label || others[0].t.name || it.name) });
   });
-  // 名前で決まるものは、仲間ごとに行にまとめる（見出しは付けない）。1行は6マスで、[品名, 使うマス数]。
-  // 長い名前（7文字以上）は3マス以上、短い名前は1〜2マスにして、全角のまま収める（半角にしない）
-  // 13 Pro（幅390）での使える幅：2マス101px、3マス159px、4マス217px。品名の幅：サイクリングマシーン145、ミラーキャビネット132、ランドリーラック118、ホワイトボード103
+  // 名前で決まるものは、仲間ごとに1行にまとめる（見出しは付けない）。3つの行はカタカナが長ければ半角にして収める
+  // ここに無い品名（あとで足したもの）は、最後の行に3つずつ並ぶ
   const NAME_ROWS = [
-    [['サイクリングマシーン', 3], ['ランニングマシーン', 3]],                 // 運動
-    [['車椅子', 2], ['介護用トイレ', 2], ['畳', 2]],                          // 介護（畳はおばあちゃんのイメージ）
-    [['洗面台', 2], ['ミラーキャビネット', 4]],                               // 洗面所
-    [['ランドリーラック', 4], ['水槽', 2]],                                   // 洗面所と水まわり
-    [['ホワイトボード', 4], ['滑り台', 2]],                                   // そのほか
+    ['サイクリングマシーン', 'ランニングマシーン'], // 運動
+    ['車椅子', '介護用トイレ', '畳'],                             // 介護（畳はおばあちゃんのイメージ）
+    ['洗面台', 'ランドリーラック', 'ミラーキャビネット'],         // 洗面所
+    ['水槽', '滑り台', 'ホワイトボード'],                        // そのほか
   ];
   const byNm = new Map(named.map(x => [x.nm, x]));
-  const used = new Set(NAME_ROWS.flat().map(([n]) => n));
-  const rowsOf = NAME_ROWS.map(r => r.filter(([n]) => byNm.has(n)).map(([n, sp]) => ({ ...byNm.get(n), sp }))).filter(r => r.length);
-  // ここに無い品名（あとで足したもの）は、最後に3つずつ並べる（長ければ半角）
-  const rest = named.filter(x => !used.has(x.nm));
-  for (let k = 0; k < rest.length; k += 3) rowsOf.push(rest.slice(k, k + 3).map(x => ({ ...x, sp: 2, half: true })));
+  const rowsOf = NAME_ROWS.map(r => r.map(n => byNm.get(n)).filter(Boolean)).filter(r => r.length);
+  const rest = named.filter(x => !NAME_ROWS.flat().includes(x.nm));
+  for (let k = 0; k < rest.length; k += 3) rowsOf.push(rest.slice(k, k + 3));
   const yenBtn = (ii, x) => `<button class="tbtn" data-tier="${gi}-${ii}-${x.ti}"><span class="p">${x.t.price.toLocaleString('ja-JP')}円</span></button>`;
   const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:repeat(6,1fr)">${rowsOf.map(r => r.map(x =>
-    `<button class="tbtn" style="grid-column:span ${x.sp}" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${x.half ? halfIfLong(x.nm) : x.nm}</span></button>`).join('')).join('')}</div></div>`;
+    `<button class="tbtn" style="grid-column:span ${6 / r.length}" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${r.length >= 3 ? halfIfLong(x.nm) : x.nm}</span></button>`).join('')).join('')}</div></div>`;
   const rowCards = rows.map(({ it, ii, tis, title }) => {
     const long = it.kinds || it.free || tis.length > 3; // 種類・名前の欄があるか、値段が4つなら、ボタンは名前の下の段に
     const btns = tis.map(x => yenBtn(ii, x)).join('');
