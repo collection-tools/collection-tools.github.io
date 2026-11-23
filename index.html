@@ -245,6 +245,8 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 .prow-line .prow-btns .tbtn { width: 66px; padding-left: 0; padding-right: 0; } /* 375px幅でも名前（マッサージ機）が折り返さない幅 */
 .prow-name { white-space: nowrap; }
 .prow-under { margin-top: 8px; }
+.neq { grid-column: 1 / -1; display: flex; gap: 6px; }
+.neq .tbtn { flex: 1 1 auto; } /* 文字の幅を基準に、残りを同じだけ分ける＝どのボタンも左右の余白が等しい */
 .prow .free { margin-top: 8px; }
 .prow .kind-pop.inline { margin: 8px 0 0; }
 .tiers { display: grid; gap: 6px; }
@@ -1143,17 +1145,20 @@ function restHTML() {
     ['サイクリングマシーン', 'ランニングマシーン'], // 運動
     ['車椅子', '介護用トイレ', '畳'],                             // 介護（畳はおばあちゃんのイメージ）
     ['洗面台', 'ランドリーラック', 'ミラーキャビネット'],         // 洗面所
-    [['水槽', 1], ['滑り台', 2], ['ホワイトボード', 3]],         // そのほか（マス数を指定：短い名前を細くして、ホワイトボードを全角で収める）
+    { eq: ['水槽', '滑り台', 'ホワイトボード'] },                 // そのほか（余白を等しくする行：幅は文字の長さに合わせて、残りを同じだけ分ける。ホワイトボードも全角で収まる）
   ];
   const byNm = new Map(named.map(x => [x.nm, x]));
-  // 行の中は、品名だけなら同じ幅。[品名, マス数] ならそのマス数（1行は6マス）
+  // 行の中は、品名だけなら同じ幅。{ eq: [...] } の行は、文字の長さに合わせた幅＋残りを同じだけ分ける（余白が等しい）
   const nmOf = n => Array.isArray(n) ? n[0] : n;
-  const rowsOf = NAME_ROWS.map(r => r.map(n => { const x = byNm.get(nmOf(n)); return x && { ...x, sp: Array.isArray(n) ? n[1] : 0 }; }).filter(Boolean)).filter(r => r.length);
-  const rest = named.filter(x => !NAME_ROWS.flat().map(nmOf).includes(x.nm));
+  const namesIn = r => r.eq || r;
+  const rowsOf = NAME_ROWS.map(r => { const xs = namesIn(r).map(n => byNm.get(nmOf(n))).filter(Boolean); return r.eq ? { eq: xs } : xs; }).filter(r => (r.eq || r).length);
+  const rest = named.filter(x => !NAME_ROWS.flatMap(namesIn).map(nmOf).includes(x.nm));
   for (let k = 0; k < rest.length; k += 3) rowsOf.push(rest.slice(k, k + 3));
   const yenBtn = (ii, x) => `<button class="tbtn" data-tier="${gi}-${ii}-${x.ti}"><span class="p">${x.t.price.toLocaleString('ja-JP')}円</span></button>`;
-  const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:repeat(6,1fr)">${rowsOf.map(r => r.map(x =>
-    `<button class="tbtn" style="grid-column:span ${x.sp || 6 / r.length}" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${r.length >= 3 && !x.sp ? halfIfLong(x.nm) : x.nm}</span></button>`).join('')).join('')}</div></div>`;
+  const nbtn = (x, st, nm) => `<button class="tbtn"${st} data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${nm}</span></button>`;
+  const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:repeat(6,1fr)">${rowsOf.map(r => r.eq
+    ? `<div class="neq">${r.eq.map(x => nbtn(x, '', x.nm)).join('')}</div>`
+    : r.map(x => nbtn(x, ` style="grid-column:span ${6 / r.length}"`, r.length >= 3 ? halfIfLong(x.nm) : x.nm)).join('')).join('')}</div></div>`;
   const rowCards = rows.map(({ it, ii, tis, title }) => {
     const long = it.kinds || it.free || tis.length > 3; // 種類・名前の欄があるか、値段が4つなら、ボタンは名前の下の段に
     const btns = tis.map(x => yenBtn(ii, x)).join('');
