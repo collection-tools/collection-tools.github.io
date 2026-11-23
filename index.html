@@ -310,6 +310,7 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 .bottom .bbtn { flex: 1; font-size: 14px; white-space: nowrap; padding: 0 4px; }
 .bbtn.undo { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .bbtn.reset-all { border-color: var(--red); color: var(--red); background: transparent; }
+.bbtn.redo.still { color: var(--text2); opacity: .5; } /* 進めるものが無い時は薄く */
 
 /* ドロワー（料金表） */
 /* 料金表とポスト位置をタブで切りかえる。ポスト位置（postfinder.html）は最初に開いた時だけ読みこむ */
@@ -546,6 +547,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 <div class="bottom">
   <div>
   <button class="bbtn undo" id="undo">1つ戻す</button>
+  <button class="bbtn redo" id="redo">進む</button>
   <button class="bbtn reset-all" id="resetAll">クリア</button>
 </div></div>
 
@@ -744,6 +746,7 @@ const newDay = () => ({ date: today(), cur: 0, dais: Array.from({ length: DAIS }
 let state;
 // 1つ戻す：変える前の状態を積んでおく
 let history = [];
+let redo = [], redoing = false; // 進む：1つ戻すで取り消した変更。新しく何か変えたら空にする
 function snap() { history.push(JSON.stringify(state)); if (history.length > 50) history.shift(); }
 // 一覧の見せ方：ryaku（メモの暗号）か shou（くわしく）。端末に覚えておく
 let view = 'ryaku';
@@ -879,6 +882,7 @@ function render() {
 
   const groups = groupsOf(dai);
   // 済：この台は終わった印（押す意味は特に無い。もう一度押すと外れる）
+  document.getElementById('redo').classList.toggle('still', !redo.some(r => r.c === state.cur));
   if (document.getElementById('calcSheet').classList.contains('on')) document.getElementById('calcUndo').classList.toggle('still', !undoMoves());
   if (document.getElementById('ptsPop').classList.contains('on')) renderLog(); // 開いたまま足しても、記録を追いかける
   const db = document.getElementById('doneBtn');
@@ -1133,7 +1137,8 @@ function listHTML(groups) {
 let lastPress = null;
 document.addEventListener('pointerdown', e => { lastPress = e.target; }, true);
 function change(fn) {
-  if (state.date !== today()) { state.date = today(); history = []; }
+  if (state.date !== today()) { state.date = today(); history = []; redo = []; }
+  if (!redoing) redo = [];
   snap(); const before = history[history.length - 1]; fn();
   absorbRest(JSON.parse(before));
   // 済の台は金額を動かさない（打つ・ひく・移す・連動・残りの引き取り、どれでも）。動いたら、やらなかったことにして震える
@@ -1646,6 +1651,7 @@ function undoMoves() {
   const i = undoStep();
   return i >= 0 && sum(JSON.parse(history[i]).dais[state.cur] || newDai()) !== sum(cur());
 }
+const putDai = (st, k, v) => { while (st.dais.length <= k) st.dais.push(newDai()); st.dais[k] = v ? JSON.parse(JSON.stringify(v)) : newDai(); };
 // 1つ戻す：いま見ている台の、最後の変更だけを戻す（ほかの台で後からした変更はそのまま。見ている台も動かさない）
 // その変更で一緒に動いた台（3・4台目の相手、残りの台、全てリセット）と総量も、その時の分だけ戻す
 document.getElementById('undo').onclick = () => {
@@ -1659,21 +1665,37 @@ document.getElementById('undo').onclick = () => {
   const moved = [...Array(n).keys()].filter(k => J(h.dais[k]) !== J(after.dais[k]));
   const goalMoved = (h.goal || 0) !== (after.goal || 0);
   const postD = moved.map(k => J(after.dais[k])), postG = after.goal || 0;
-  const put = (st, k, v) => { while (st.dais.length <= k) st.dais.push(newDai()); st.dais[k] = v ? JSON.parse(J(v)) : newDai(); };
-  moved.forEach(k => put(state, k, h.dais[k]));
+  moved.forEach(k => putDai(state, k, h.dais[k]));
   if (goalMoved) { if (h.goal) state.goal = h.goal; else delete state.goal; }
   // 後ろの記録も、その後に変えていない所は戻した中身にそろえる（もう一度押した時に、取り消した変更を戻さないように）
+  redo.push({ c, moved, post: postD.map(x => x ? JSON.parse(x) : null), goalMoved, postG }); // postD は戻す前に取った文字（after は state そのものの時があるので使わない）
   history.splice(i, 1);
   history = history.map((x, j) => {
     if (j < i) return x;
     const st = JSON.parse(x);
-    moved.forEach((k, m) => { if (J(st.dais[k]) === postD[m]) put(st, k, h.dais[k]); });
+    moved.forEach((k, m) => { if (J(st.dais[k]) === postD[m]) putDai(st, k, h.dais[k]); });
     if (goalMoved && (st.goal || 0) === postG) { if (h.goal) st.goal = h.goal; else delete st.goal; }
     return J(st);
   });
   state.cur = c;
   shownAmount = null;
   save(); render(); push(before);
+};
+
+// 進む：いま見ている台で、1つ戻すで取り消した変更をやり直す（一緒に戻した台と総量も）
+document.getElementById('redo').onclick = () => {
+  const c = state.cur, j = redo.findLastIndex(r => r.c === c);
+  if (j < 0) return;
+  const r = redo.splice(j, 1)[0];
+  redoing = true;
+  const ok = change(() => {
+    r.moved.forEach((k, m) => putDai(state, k, r.post[m]));
+    if (r.goalMoved) { if (r.postG) state.goal = r.postG; else delete state.goal; }
+    state.cur = c;
+  });
+  redoing = false;
+  if (ok === false) redo.splice(j, 0, r); // 済の台で動かせなかった時は、進むを残す
+  shownAmount = null; render();
 };
 
 // 電卓の画面のボタン：1つ戻す（下のと同じ）／この台の金額を空にする（大物は残す。押し間違えたら1つ戻す）
@@ -2007,7 +2029,7 @@ document.querySelectorAll('.late-press').forEach(sh => {
 
 // アプリに戻ってきた時に日付をまたいでいたら新しい日にする
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && state.date !== today()) { state.date = today(); history = []; save(); render(); }
+  if (document.visibilityState === 'visible' && state.date !== today()) { state.date = today(); history = []; redo = []; save(); render(); }
 });
 
 // 台を切りかえる。現場の行は、進む時は右から、戻る時は左から滑りこんでくる（「大物：〇箇所」「略/詳」と下の電卓・＋は動かさない）
@@ -2163,7 +2185,7 @@ async function subscribe() {
   render();
 }
 // 日付が変わったら、新しい日の文書を見に行く
-setInterval(() => { if (room && subDate && subDate !== today()) { if (state.date !== today()) { state.date = today(); history = []; save(); } subscribe(); } }, 60000);
+setInterval(() => { if (room && subDate && subDate !== today()) { if (state.date !== today()) { state.date = today(); history = []; redo = []; save(); } subscribe(); } }, 60000);
 
 // ===== ルームを選ぶ =====
 // この端末で使った共有コード。新しく足したものほど前（移っても並びは変えない）
@@ -2211,7 +2233,7 @@ function moveRoom(r, bring) {
   load(); state.cur = Math.min(c, state.dais.length - 1);
   carry = !!bring;
   if (bring) { state.dais = bring.dais; if (bring.goal) state.goal = bring.goal; else delete state.goal; while (state.dais.length < DAIS) state.dais.push(newDai()); state.cur = Math.min(c, state.dais.length - 1); save(); }
-  history = []; shownAmount = null;
+  history = []; redo = []; shownAmount = null;
   closeAll(); subscribe(); buzz();
 }
 document.getElementById('roomBtn').onclick = () => { renderRooms(); document.getElementById('roomIn').value = ''; openPanel('roomSheet'); };
