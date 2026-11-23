@@ -237,6 +237,15 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
   padding: 10px; margin-bottom: 8px;
 }
 .item-name { font-size: 15px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; }
+/* たまに使うもの：見出し・名前の塊・1品目1行 */
+.rest-head { margin: 4px 4px 8px; font-size: 13px; font-weight: 700; color: var(--text2); }
+.prow-line { display: flex; align-items: center; gap: 8px; }
+.prow-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.prow-btns { display: grid; gap: 6px; flex: none; }
+.prow-line .prow-btns .tbtn { width: 78px; }
+.prow-under { margin-top: 8px; }
+.prow .free { margin-top: 8px; }
+.prow .kind-pop.inline { margin: 8px 0 0; }
 .tiers { display: grid; gap: 6px; }
 .tbtn {
   border: 1px solid var(--border); background: var(--card2); color: var(--text);
@@ -714,7 +723,7 @@ const GROUPS = [
       ]},
       // 運動器具：1枚のカード。上の段は筋トレ器具・ダンベルを種類で選んで金額、下の段は金額が決まっているので品名のボタン
       // 種類は上の段（name の無いボタン）にだけ付く
-      { name: '運動器具', title: '運動器具', short: '種類', kinds: ['筋トレ器具', 'ダンベル'], rows: [4, 2, 1], tiers: [
+      { name: '運動器具', title: '運動器具', short: '種類', fold: true, kinds: ['筋トレ器具', 'ダンベル'], rows: [4, 2, 1], tiers: [
         { price: 900,  cond: '900',  yen: true },
         { price: 1300, cond: '1300', yen: true },
         { price: 2300, cond: '2300', yen: true },
@@ -1076,9 +1085,8 @@ function buildButtons() {
     ? '<button class="pbtn open-pad" data-open="padSheet" aria-label="テンキー"><svg viewBox="0 0 24 26" width="22" height="24" fill="currentColor"><circle cx="6" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="6" cy="11" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="18" cy="11" r="2"/><circle cx="6" cy="17" r="2"/><circle cx="12" cy="17" r="2"/><circle cx="18" cy="17" r="2"/><circle cx="12" cy="23" r="2"/></svg></button>'
     : `<button class="pbtn${base.includes(n) ? ' base' : ''}${n <= 23 ? ' wide' : ''}" data-price="${n * 100}">${n}<small>p</small></button>`).join('');
 
-  // 見出しで分けず、どの品目も同じ形のカードで並べる
-  document.getElementById('groups').innerHTML = GROUPS.map((g, gi) =>
-    `<section>${g.items.map((it, ii) =>
+  // 上の7つ（ベッドマット〜自転車）は今まで通りのカード。よく使うので、形も変えない
+  const card = (it, gi, ii) =>
       `<div class="item${it.fold ? ' fold open' : ''}">
         ${it.title === '' ? '' : `<div class="item-name"><span>${it.fold ? it.title : it.title || it.name}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}${it.kai ? `<button class="kai" data-kai="${gi}-${ii}">解体済</button>` : ''}${it.ko ? `<button class="kai" data-kai="${gi}-${ii}" data-flag="ko">子</button>` : ''}</span></div>`}
         ${it.free ? `<input class="free" data-free="${gi}-${ii}" type="text" placeholder="${it.kinds ? '種類に無い時は、品目の名前' : '品目の名前'}" autocomplete="off">` : ''}
@@ -1088,8 +1096,45 @@ function buildButtons() {
         <div class="tiers" style="grid-template-columns:repeat(${it.rows ? 12 : it.cols || it.tiers.length},1fr)">${it.tiers.map((t, ti) =>
           `<button class="tbtn"${it.rows ? ` style="grid-column:span ${rowSpan(it.rows, ti)}"` : ''} data-tier="${gi}-${ii}-${ti}"><span class="p">${it.yen || t.yen ? t.price.toLocaleString('ja-JP') + '円' : t.btn || t.cond}</span></button>`
         ).join('')}</div>
-      </div>`).join('')}</section>`
-  ).join('');
+      </div>`;
+  document.getElementById('groups').innerHTML = GROUPS.map((g, gi) =>
+    `<section>${g.items.slice(0, MAIN_ITEMS).map((it, ii) => card(it, gi, ii)).join('')}</section>`
+  ).join('') + restHTML();
+}
+// 自転車より下（たまに使うもの）は2つの形だけ
+//  ・名前で値段が決まるもの：品名のボタンを1枚にまとめて五十音で並べる
+//  ・大きさで値段が変わるもの：1品目＝1行。名前の右（多ければ下）に値段のボタン
+// 押した時の登録は今まで通り data-tier（GROUPS の場所）で引くので、定義はさわらない
+const MAIN_ITEMS = 7;
+function restHTML() {
+  const gi = 0, items = GROUPS[gi].items;
+  const named = [], rows = [];
+  items.forEach((it, ii) => {
+    if (ii < MAIN_ITEMS) return;
+    const all = it.tiers.map((t, ti) => ({ t, ti }));
+    const fixed = all.filter(({ t }) => !(it.yen || t.yen) && PRICE_OF_LABEL.get(t.label || t.name || it.name));
+    fixed.forEach(x => named.push({ ...x, ii, nm: (x.t.btn || x.t.cond).replace(/<br>.*/, '') }));
+    const others = all.filter(x => !fixed.includes(x));
+    if (others.length) rows.push({ it, ii, tis: others, title: it.yen || others.some(x => x.t.yen) ? (it.title || it.name) : (others[0].t.label || others[0].t.name || it.name) });
+  });
+  // 五十音。漢字は読みで並べる（品名を足したら、漢字ならここにも読みを足す）
+  const YOMI = { '介護用トイレ': 'かいごようといれ', '車椅子': 'くるまいす', '水槽': 'すいそう', '滑り台': 'すべりだい', '畳': 'たたみ' };
+  const kana = s => (YOMI[s] || s).replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  named.sort((a, b) => kana(a.nm).localeCompare(kana(b.nm), 'ja'));
+  const yenBtn = (ii, x) => `<button class="tbtn" data-tier="${gi}-${ii}-${x.ti}"><span class="p">${x.t.price.toLocaleString('ja-JP')}円</span></button>`;
+  const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:repeat(2,1fr)">${named.map(x =>
+    `<button class="tbtn" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${x.nm}</span></button>`).join('')}</div></div>`;
+  const rowCards = rows.map(({ it, ii, tis, title }) => {
+    const long = it.kinds || it.free || tis.length > 3; // 種類・名前の欄があるか、値段が4つなら、ボタンは名前の下の段に
+    const btns = tis.map(x => yenBtn(ii, x)).join('');
+    return `<div class="item prow${it.kinds ? ' fold open' : ''}">
+      <div class="prow-line"><span class="prow-name">${title}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}</span>${long ? '' : `<span class="prow-btns" style="grid-template-columns:repeat(${tis.length},1fr)">${btns}</span>`}</div>
+      ${it.free ? `<input class="free" data-free="${gi}-${ii}" type="text" placeholder="${it.kinds ? '種類に無い時は、品目の名前' : '品目の名前'}" autocomplete="off">` : ''}
+      ${it.kinds ? `<div class="kind-pop inline" data-pop="${gi}-${ii}">${it.kinds.map(k => `<button data-pick="${k}">${k}</button>`).join('')}</div>` : ''}
+      ${long ? `<div class="prow-btns prow-under" style="grid-template-columns:repeat(${tis.length},1fr)">${btns}</div>` : ''}
+    </div>`;
+  }).join('');
+  return `<section class="rest"><div class="rest-head">たまに使うもの</div>${nameCard}${rowCards}</section>`;
 }
 
 // ===== 操作 =====
