@@ -61,7 +61,8 @@ header {
 /* 南京錠：普段はグレー。押すとロック（黒）。ロック中は、消す・戻す・ひくが効かない */
 .lock-btn { flex: none; width: 36px; height: 30px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--text2); opacity: .5; display: grid; place-items: center; cursor: pointer; }
 .lock-btn.on { background: var(--accent); color: var(--on-accent); opacity: 1; }
-body.lockon .add-big, body.lockon #resetAll, body.lockon #undo, body.lockon #calcUndo, body.lockon #calcReset, body.lockon #subBtn, body.lockon .sdel, body.lockon [data-unbig], body.lockon .room-del { opacity: .35; }
+body.lockon .add-big, body.lockon #resetAll, body.lockon #undo, body.lockon #calcUndo, body.lockon #calcReset, body.lockon #subBtn, body.lockon [data-unbig], body.lockon .room-del { opacity: .35; }
+body.lockon .srow { opacity: .7; } /* 現場の行は読めるように少しだけ */
 .head-reset { flex: none; border: 1px solid var(--red); border-radius: 8px; background: transparent; color: var(--red); font: inherit; font-size: 12px; font-weight: 700; padding: 1px 8px; cursor: pointer; }
 .head-day { text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; }
 .head-day b { display: block; font-size: 17px; color: var(--text); }
@@ -1140,7 +1141,7 @@ function listHTML(groups) {
 // 変える時はいつもここを通す（1つ戻すのため）
 // 最後に指を置いたボタン（済の台を動かそうとした時に、そのボタンを震わせる）
 let lastPress = null;
-// 南京錠：ロック中は、消す・戻す・ひく・大物の追加を受けつけない（点数を足す・打つ・済・場所・移すは今まで通り）。端末ごとに覚える
+// 南京錠：ロック中は、消す・戻す・ひく・大物の追加・現場の行（直す・場所・移す・✕・並べ替え）を受けつけない（点数を足す・打つ・済は今まで通り）。端末ごとに覚える
 const LOCK_SVG = {
   off: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
   on: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
@@ -1267,6 +1268,7 @@ document.getElementById('bigList').addEventListener('click', e => {
   if (!el) return;
   e.stopPropagation();
   if (dragged) return; // 並べ替えで離した指では開かない
+  if (lockBlock(e.target.closest('button') || el)) return; // ロック中は現場の行を触っても何も変えない（直す・場所・移す・✕）
   const s = +el.dataset.edit;
   if (e.target.closest('[data-place]')) {
     const now = (cur().bigs.find(x => x.s === s && x.place) || {}).place || '';
@@ -1280,8 +1282,7 @@ document.getElementById('bigList').addEventListener('click', e => {
   }
   if (e.target.closest('[data-smove]')) { openMoveMenu(e.target.closest('[data-smove]'), s); return; }
   if (e.target.closest('[data-sdel]')) {
-    if (lockBlock(e.target.closest('[data-sdel]'))) return;
-    const doDel = () => change(() => { cur().bigs = cur().bigs.filter(x => x.s !== s); });
+      const doDel = () => change(() => { cur().bigs = cur().bigs.filter(x => x.s !== s); });
     buzz();
     if (el.classList.contains('gone')) return;
     el.style.height = el.offsetHeight + 'px';
@@ -2151,7 +2152,7 @@ function endDrag() {
 }
 bigListEl.addEventListener('touchstart', e => {
   const row = e.target.closest('.srow');
-  if (!row || e.target.closest('[data-sdel]') || e.target.closest('[data-smove]') || e.target.closest('[data-place]') || e.touches.length > 1 || bigListEl.children.length < 2) return;
+  if (lockOn || !row || e.target.closest('[data-sdel]') || e.target.closest('[data-smove]') || e.target.closest('[data-place]') || e.touches.length > 1 || bigListEl.children.length < 2) return;
   const y = e.touches[0].clientY;
   press = { x: e.touches[0].clientX, y, t: setTimeout(() => { press = null; startDrag(row, y); }, 150) };
 }, { passive: true });
