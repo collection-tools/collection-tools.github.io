@@ -60,6 +60,7 @@ header {
 /* 南京錠：普段はグレー。押すとロック（黒）。ロック中は、消す・戻す・ひくが効かない */
 .lock-btn { flex: none; width: 40px; height: 40px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--text2); opacity: .5; display: grid; place-items: center; cursor: pointer; }
 .lock-btn.on { background: var(--accent); color: var(--on-accent); opacity: 1; }
+.lock-btn.ng { animation: shake .32s ease; } /* ロック中に止めた所を触ったら、南京錠が揺れる */
 .head-reset { flex: none; border: 1px solid var(--red); border-radius: 8px; background: transparent; color: var(--red); font: inherit; font-size: 12px; font-weight: 700; padding: 1px 8px; cursor: pointer; }
 .head-day { text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; }
 .head-day b { display: block; font-size: 17px; color: var(--text); }
@@ -1096,6 +1097,8 @@ function buildButtons() {
 // （重ねると、iPhoneでスカウターの数字が降りてくる動きが消える。振動を優先して、ムツキが選んだ）
 function buzz() { if (navigator.vibrate) navigator.vibrate(15); }
 const HAPTIC_SEL = '#calcSheet .pbtn[data-price], #padAdd, #calcUndo';
+// ロック中だけ触覚を重ねる所（触っても何も変わらない所。押すとコツンと来て、南京錠が揺れる）
+const LOCK_SEL = '#resetAll, #undo, #redo, .add-big, #calcOpen, #restBtn, .srow, .room-del, .dai-chip.on';
 function addHaptic(el) {
   if (el.querySelector(':scope > .hsw')) return;
   if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
@@ -1106,8 +1109,9 @@ function addHaptic(el) {
 }
 function hapticScan(root) {
   if (root.nodeType !== 1) return;
-  if (root.matches(HAPTIC_SEL)) addHaptic(root);
-  root.querySelectorAll(HAPTIC_SEL).forEach(addHaptic);
+  const sel = lockOn ? HAPTIC_SEL + ', ' + LOCK_SEL : HAPTIC_SEL;
+  if (root.matches(sel)) addHaptic(root);
+  root.querySelectorAll(sel).forEach(addHaptic);
 }
 if (!navigator.vibrate) {
   hapticScan(document.body);
@@ -1144,16 +1148,27 @@ const LOCK_SVG = {
   off: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
   on: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
 };
-let lockOn = false;
+var lockOn = false; // var：触覚のスイッチを付ける処理（上の方）が読み込み時に見るので、先に宣言だけ通しておく
 try { lockOn = localStorage.getItem('shuushuu3-lock') === '1'; } catch (e) {}
 function paintLock() {
   const b = document.getElementById('lockBtn');
   b.innerHTML = lockOn ? LOCK_SVG.on : LOCK_SVG.off;
   b.classList.toggle('on', lockOn); b.setAttribute('aria-pressed', lockOn);
   document.body.classList.toggle('lockon', lockOn);
+  // iPhoneの手に来る振動：ロック中だけ、止めた所に触覚のスイッチを重ねる。外したら取る
+  if (!navigator.vibrate) {
+    if (lockOn) hapticScan(document.body);
+    else document.querySelectorAll(LOCK_SEL).forEach(el => { if (!el.matches(HAPTIC_SEL)) { const s = el.querySelector(':scope > .hsw'); if (s) s.remove(); } });
+  }
 }
-// 止める操作の入口で呼ぶ。ロック中なら true を返す（呼んだ側はそこでやめる）。震わせたり薄くしたりはせず、ただ反応しない
-function lockBlock() { return lockOn; }
+// 止める操作の入口で呼ぶ。ロック中なら南京錠を揺らして（Androidは振動も）true を返す。呼んだ側はそこでやめる
+function lockBlock() {
+  if (!lockOn) return false;
+  const l = document.getElementById('lockBtn');
+  l.classList.remove('ng'); void l.offsetWidth; l.classList.add('ng');
+  if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+  return true;
+}
 document.addEventListener('pointerdown', e => { lastPress = e.target; }, true);
 function change(fn) {
   if (state.date !== today()) { state.date = today(); history = []; redo = []; }
@@ -1899,7 +1914,7 @@ function closeKindPops() {
 // メニュー（左から）とテンキー・大物（下から）を開け閉めする
 function openPanel(id) {
   // ロック中は、中身を変える画面（電卓・テンキー・総量・大物登録・場所）を開かない。台の行き来・料金表・ルームは開ける
-  if (lockOn && ['calcSheet', 'padSheet', 'bigSheet', 'placeSheet'].includes(id)) return;
+  if (lockOn && ['calcSheet', 'padSheet', 'bigSheet', 'placeSheet'].includes(id)) { lockBlock(); return; }
   closeAll();
   if (id === 'padSheet') setupPad();
   if (id === 'calcSheet') document.getElementById('calcUndo').classList.toggle('still', !undoMoves());
