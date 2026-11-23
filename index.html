@@ -242,7 +242,8 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 .prow-line { display: flex; align-items: center; gap: 8px; }
 .prow-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .prow-btns { display: grid; gap: 6px; flex: none; }
-.prow-line .prow-btns .tbtn { width: 78px; }
+.prow-line .prow-btns .tbtn { width: 66px; padding-left: 0; padding-right: 0; } /* 375px幅でも名前（マッサージ機）が折り返さない幅 */
+.prow-name { white-space: nowrap; }
 .prow-under { margin-top: 8px; }
 .prow .free { margin-top: 8px; }
 .prow .kind-pop.inline { margin: 8px 0 0; }
@@ -748,9 +749,8 @@ const GROUPS = [
         { price: 1300, cond: '1300', yen: true },
         { price: 2300, cond: '2300', yen: true },
         { price: 3200, cond: '3200', yen: true },
-        { price: 1300, name: 'エアロバイク', cond: 'エアロバイク', btn: 'エアロバイク', label: 'エアロバイク' },
-        { price: 1300, name: 'サイクリングマシーン', cond: 'サイクリングマシーン', btn: 'サイクリングマシーン', label: 'サイクリングマシーン' },
-        { price: 2300, name: 'ランニングマシーン', cond: 'ランニングマシーン', btn: 'ランニングマシーン', label: 'ランニングマシーン' },
+        { price: 1300, name: 'サイクリングマシン', cond: 'サイクリングマシン', btn: 'サイクリングマシン', label: 'サイクリングマシン' },
+        { price: 2300, name: 'ランニングマシン', cond: 'ランニングマシン', btn: 'ランニングマシン', label: 'ランニングマシン' },
       ]},
       // その他：名前を打って金額を押す。前は縁台・ミラーキャビネットを種類で選んでいたが、値段が分かったので上の2つへ出した
       { name: 'その他', title: 'その他', short: '種類', yen: true, free: true, tiers: [
@@ -1003,7 +1003,7 @@ const ABBR = {
   '水槽': { k: '水', h: '（水）' }, 'キャットタワー': { k: 'キャット', h: 'きゃっと' },
   '車椅子': { k: '車', h: '（車）' }, '介護用トイレ': { k: '介', h: '（介）' },
   '筋トレ器具': { k: '筋', h: '（筋）' }, 'ダンベル': { k: 'ダ', h: 'だ' },
-  'エアロバイク': { k: 'エア', h: 'えあ' }, 'サイクリングマシーン': { k: 'サイクリングマシーン', h: 'サイクリングマシーン' }, 'ランニングマシーン': { k: 'ラン', h: 'らん' },
+  'サイクリングマシン': { k: 'サイクリングマシン', h: 'サイクリングマシン' }, 'ランニングマシン': { k: 'ラン', h: 'らん' },
   'ホワイトボード': { k: '白', h: '白' }, // 900円でも丸かっこを付けない
   '滑り台': { k: '滑', h: '滑' }, // 滑り台は900円でも丸かっこを付けない
 };
@@ -1129,7 +1129,7 @@ function restHTML() {
   // 名前で決まるものは、仲間ごとに1行にまとめる（見出しは付けない）。3つの行はカタカナが長ければ半角にして収める
   // ここに無い品名（あとで足したもの）は、最後の行に3つずつ並ぶ
   const NAME_ROWS = [
-    ['エアロバイク', 'サイクリングマシーン', 'ランニングマシーン'], // 運動
+    ['サイクリングマシン', 'ランニングマシン'], // 運動
     ['車椅子', '介護用トイレ'],                                  // 介護
     ['水槽', 'ランドリーラック', 'ミラーキャビネット'],           // 水まわり
     ['畳', '滑り台', 'ホワイトボード'],                          // 家・こども
