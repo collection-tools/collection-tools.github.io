@@ -208,7 +208,7 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 }
 .pad-disp small { font-size: 0.55em; font-weight: 600; margin-left: 2px; }
 .pad-disp.blank { color: var(--text2); font-weight: 600; }
-.pad-add.still .hsw, #calcUndo.still .hsw { display: none; } /* 押しても金額が動かない時は鳴らさない */
+.pad-add.still .hsw, #calcUndo.still .hsw, body.lockon #calcUndo .hsw { display: none; } /* 押しても金額が動かない時は鳴らさない */
 .pad-add {
   width: 96px; height: 54px; border-radius: 12px; border: none;
   background: var(--accent); color: var(--on-accent); font-size: 30px; font-weight: 700;
@@ -1152,13 +1152,8 @@ function paintLock() {
   b.classList.toggle('on', lockOn); b.setAttribute('aria-pressed', lockOn);
   document.body.classList.toggle('lockon', lockOn);
 }
-// 消す操作の入口で呼ぶ。ロック中なら押したボタンを震わせて true を返す（呼んだ側はそこでやめる）
-function lockBlock(btn) {
-  if (!lockOn) return false;
-  const b = btn || (lastPress && lastPress.closest && lastPress.closest('button'));
-  if (b) shakeNg(b); else if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
-  return true;
-}
+// 止める操作の入口で呼ぶ。ロック中なら true を返す（呼んだ側はそこでやめる）。震わせたり薄くしたりはせず、ただ反応しない
+function lockBlock() { return lockOn; }
 document.addEventListener('pointerdown', e => { lastPress = e.target; }, true);
 function change(fn) {
   if (state.date !== today()) { state.date = today(); history = []; redo = []; }
