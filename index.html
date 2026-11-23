@@ -61,8 +61,6 @@ header {
 /* 南京錠：普段はグレー。押すとロック（黒）。ロック中は、消す・戻す・ひくが効かない */
 .lock-btn { flex: none; width: 36px; height: 30px; padding: 0; border: none; border-radius: 8px; background: transparent; color: var(--text2); opacity: .5; display: grid; place-items: center; cursor: pointer; }
 .lock-btn.on { background: var(--accent); color: var(--on-accent); opacity: 1; }
-body.lockon .add-big, body.lockon #resetAll, body.lockon #undo, body.lockon #calcUndo, body.lockon #calcReset, body.lockon #subBtn, body.lockon [data-unbig], body.lockon .room-del { opacity: .35; }
-body.lockon .srow { opacity: .7; } /* 現場の行は読めるように少しだけ */
 .head-reset { flex: none; border: 1px solid var(--red); border-radius: 8px; background: transparent; color: var(--red); font: inherit; font-size: 12px; font-weight: 700; padding: 1px 8px; cursor: pointer; }
 .head-day { text-align: right; font-size: 12px; color: var(--text2); line-height: 1.2; }
 .head-day b { display: block; font-size: 17px; color: var(--text); }
