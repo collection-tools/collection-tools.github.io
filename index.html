@@ -734,6 +734,7 @@ const GROUPS = [
         { price: 1300, name: 'キャットタワー', cond: '1300', btn: 'キャットタワー<br>1,300円', label: 'キャットタワー' },
       ]},
       // その他：押すまで閉じている。種類から選ぶか、無ければ名前を打って金額を押す（打った名前が優先）
+      // fold：種類をカードの中に並べる形（前は畳んでいたが、2026-11-23から畳まずにいつも開く）
       { name: 'その他', title: 'その他', short: '種類', fold: true, yen: true, free: true, kinds: ['縁台', '洗面化粧台ミラーキャビネット'], tiers: [
         { price: 900, cond: '900' }, { price: 1300, cond: '1300' }, { price: 2300, cond: '2300' }, { price: 3200, cond: '3200' },
       ]},
@@ -1078,8 +1079,8 @@ function buildButtons() {
   // 見出しで分けず、どの品目も同じ形のカードで並べる
   document.getElementById('groups').innerHTML = GROUPS.map((g, gi) =>
     `<section>${g.items.map((it, ii) =>
-      `<div class="item${it.fold ? ' fold' : ''}">
-        ${it.title === '' ? '' : `<div class="item-name"><span>${it.fold ? `<button class="fold-btn" data-fold aria-expanded="false">${it.title}</button>` : it.title || it.name}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}${it.kai ? `<button class="kai" data-kai="${gi}-${ii}">解体済</button>` : ''}${it.ko ? `<button class="kai" data-kai="${gi}-${ii}" data-flag="ko">子供用</button>` : ''}</span></div>`}
+      `<div class="item${it.fold ? ' fold open' : ''}">
+        ${it.title === '' ? '' : `<div class="item-name"><span>${it.fold ? it.title : it.title || it.name}${it.kinds ? `<button class="kind" data-kind="${gi}-${ii}" data-label="${it.short}" data-value="">${it.short}</button>` : ''}${it.kai ? `<button class="kai" data-kai="${gi}-${ii}">解体済</button>` : ''}${it.ko ? `<button class="kai" data-kai="${gi}-${ii}" data-flag="ko">子供用</button>` : ''}</span></div>`}
         ${it.free ? `<input class="free" data-free="${gi}-${ii}" type="text" placeholder="${it.kinds ? '種類に無い時は、品目の名前' : '品目の名前'}" autocomplete="off">` : ''}
         ${it.kinds && it.fold ? `<div class="kind-pop inline" data-pop="${gi}-${ii}">${it.kinds.map(k =>
           `<button data-pick="${k}">${k}</button>`).join('')}</div>` : it.kinds ? `<div class="kind-pop" data-pop="${gi}-${ii}">${['', ...it.kinds].map(k =>
