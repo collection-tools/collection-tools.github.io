@@ -246,6 +246,14 @@ main > section { flex: 1; min-height: 0; display: flex; flex-direction: column; 
 .prow-name { white-space: nowrap; }
 .prow-under { margin-top: 8px; }
 .neq { grid-column: 1 / -1; display: flex; gap: 6px; }
+/* 名前のボタンの右に「▾」：左を押すとその品目、▾を押すと仲間の品目（ランドリーラック）が下に出る */
+.tsplit { position: relative; display: flex; }
+.tsplit > .tbtn { flex: 1; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
+.tsub { flex: none; width: 30px; display: grid; place-items: center; border: 1px solid var(--border); border-left-color: #d6d6d4; background: var(--card2); color: var(--text2); border-radius: 0 10px 10px 0; cursor: pointer; padding: 0; }
+.tsub svg { display: block; }
+.tmenu { display: none; position: absolute; z-index: 6; right: 0; top: calc(100% + 4px); min-width: 100%; flex-direction: column; gap: 6px; padding: 6px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+.tmenu.on { display: flex; }
+.tmenu .tbtn { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
 .neq .tbtn { flex: 1 1 auto; } /* 文字の幅を基準に、残りを同じだけ分ける＝どのボタンも左右の余白が等しい */
 .prow .free { margin-top: 8px; }
 .prow .kind-pop.inline { margin: 8px 0 0; }
@@ -1144,18 +1152,22 @@ function restHTML() {
   const NAME_ROWS = [
     ['サイクリングマシーン', 'ランニングマシーン'], // 運動
     ['車椅子', '介護用トイレ', '畳'],                             // 介護（畳はおばあちゃんのイメージ）
-    ['洗面台', 'ランドリーラック', 'ミラーキャビネット'],         // 洗面所
+    [{ name: '洗面台', menu: ['ランドリーラック'] }, 'ミラーキャビネット'], // 洗面所（洗面台の右の「▾」から、ランドリーラックを選ぶ。区ではランドリーラックも洗面台の仲間）
     { eq: ['水槽', '滑り台', 'ホワイトボード'] },                 // そのほか（余白を等しくする行：幅は文字の長さに合わせて、残りを同じだけ分ける。ホワイトボードも全角で収まる）
   ];
   const byNm = new Map(named.map(x => [x.nm, x]));
   // 行の中は、品名だけなら同じ幅。{ eq: [...] } の行は、文字の長さに合わせた幅＋残りを同じだけ分ける（余白が等しい）
-  const nmOf = n => Array.isArray(n) ? n[0] : n;
+  const nmOf = n => (n && n.name) || (Array.isArray(n) ? n[0] : n);
   const namesIn = r => r.eq || r;
-  const rowsOf = NAME_ROWS.map(r => { const xs = namesIn(r).map(n => byNm.get(nmOf(n))).filter(Boolean); return r.eq ? { eq: xs } : xs; }).filter(r => (r.eq || r).length);
-  const rest = named.filter(x => !NAME_ROWS.flatMap(namesIn).map(nmOf).includes(x.nm));
+  // { name, menu: [...] } は、名前のボタンの右に「▾」を付けて、menu の品目を選べるようにする（その品目はボタンとしては並べない）
+  const inMenu = new Set(NAME_ROWS.flatMap(namesIn).flatMap(n => (n && n.menu) || []));
+  const rowsOf = NAME_ROWS.map(r => { const xs = namesIn(r).map(n => { const x = byNm.get(nmOf(n)); return x && n.menu ? { ...x, menu: n.menu.map(m => byNm.get(m)).filter(Boolean) } : x; }).filter(Boolean); return r.eq ? { eq: xs } : xs; }).filter(r => (r.eq || r).length);
+  const rest = named.filter(x => !NAME_ROWS.flatMap(namesIn).map(nmOf).includes(x.nm) && !inMenu.has(x.nm));
   for (let k = 0; k < rest.length; k += 3) rowsOf.push(rest.slice(k, k + 3));
   const yenBtn = (ii, x) => `<button class="tbtn" data-tier="${gi}-${ii}-${x.ti}"><span class="p">${x.t.price.toLocaleString('ja-JP')}円</span></button>`;
-  const nbtn = (x, st, nm) => `<button class="tbtn"${st} data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${nm}</span></button>`;
+  const nbtn = (x, st, nm) => x.menu && x.menu.length
+    ? `<div class="tsplit"${st}><button class="tbtn" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${nm}</span></button><button class="tsub" data-tmenu aria-label="${x.menu.map(m => m.nm).join('・')}を選ぶ"><svg viewBox="0 0 12 8" width="12" height="8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1.5l5 5 5-5"/></svg></button><div class="tmenu">${x.menu.map(m => `<button class="tbtn" data-tier="${gi}-${m.ii}-${m.ti}"><span class="p">${m.nm}</span></button>`).join('')}</div></div>`
+    : `<button class="tbtn"${st} data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${nm}</span></button>`;
   const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:repeat(6,1fr)">${rowsOf.map(r => r.eq
     ? `<div class="neq">${r.eq.map(x => nbtn(x, '', x.nm)).join('')}</div>`
     : r.map(x => nbtn(x, ` style="grid-column:span ${6 / r.length}"`, r.length >= 3 ? halfIfLong(x.nm) : x.nm)).join('')).join('')}</div></div>`;
@@ -1390,8 +1402,13 @@ document.getElementById('bigList').addEventListener('click', e => {
   openPanel('bigSheet'); editS = s; render();
 });
 
+function closeTmenus() { document.querySelectorAll('.tmenu.on').forEach(el => el.classList.remove('on')); }
 document.addEventListener('click', e => {
+  // 「▾」の中の品目を選んだら閉じる（登録は下の普通の処理で済む）。外を押しても閉じる
+  if (e.target.closest('.tmenu .tbtn')) setTimeout(closeTmenus, 0);
+  else if (!e.target.closest('[data-tmenu]')) closeTmenus();
   const b = e.target.closest('button');
+  if (b && b.hasAttribute('data-tmenu')) { const m = b.parentElement.querySelector('.tmenu'), on = !m.classList.contains('on'); closeTmenus(); m.classList.toggle('on', on); return; }
   if (b && b.dataset.fold != null) { const it = b.closest('.item'); it.classList.toggle('open'); b.setAttribute('aria-expanded', it.classList.contains('open')); return; }
   // 箱物のピッカー：開け閉めと選ぶのはここで済ませる。窓の外を押したら閉じる
   if (b && b.dataset.kind) {
@@ -2013,6 +2030,7 @@ function openPanel(id) {
 // 電卓の中のテンキーは電卓の上に重ねて開く。閉じたら電卓だけが残る
 let backToCalc = false;
 function closeAll() {
+  closeTmenus();
   closeLog();
   padBack();
   // 電卓の上に重ねたテンキーは、テンキーだけ閉じる（足した時も、✕の時も）
