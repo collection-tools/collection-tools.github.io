@@ -830,8 +830,6 @@ function fromV1() {
 const roomKey = () => room ? KEY + ':' + room : KEY;
 function load() {
   try { state = JSON.parse(localStorage.getItem(roomKey())); } catch (e) { state = null; }
-  // 共有の写しは1日ごと（クラウドも日付ごと）。前の日の写しは持ち越さない
-  if (room && state && state.date !== today()) state = null;
   if (!state || !Array.isArray(state.dais)) state = (!room && fromV1()) || newDay();
   // 日付が変わっても中身は残す（消すのは「全てリセット」だけ）。日付だけ今日に送る
   if (state.date !== today()) state.date = today();
@@ -2319,6 +2317,17 @@ function push(beforeJSON) {
   state.dais.forEach((d, i) => { if (JSON.stringify(d) !== JSON.stringify(a.dais[i])) out['d' + i] = d; });
   if (Object.keys(out).length) fs.setDoc(dayRef(), out, { merge: true }).catch(() => {});
 }
+async function startDay() {
+  const d = state.date;
+  if (!carry) {
+    try {
+      const q = fs.query(fs.collection(fs.db, 'rooms', room, 'days'), fs.where(fs.documentId(), '<', d), fs.orderBy(fs.documentId(), 'desc'), fs.limit(1));
+      const s = await fs.getDocs(q);
+      if (!s.empty && state.date === d) { fromDoc(s.docs[0].data()); save(); render(); }
+    } catch (e) {}
+  }
+  if (state.date === d && hasContent(state)) fs.setDoc(dayRef(), toDoc(state)).catch(() => {});
+}
 async function subscribe() {
   if (unsub) { unsub(); unsub = null; }
   online = false;
@@ -2331,7 +2340,8 @@ async function subscribe() {
     if (snap.metadata.hasPendingWrites) { render(); return; } // 自分が書いた分の折り返しは無視
     if (!snap.exists()) {
       // まだ誰も打っていない日：この端末の分があれば、それを最初の中身にする
-      if (first && (state.goal || state.dais.some(d => d.pts.length || d.bigs.length))) fs.setDoc(dayRef(), toDoc(state)).catch(() => {});
+      // 日付が変わっても中身は残す：クラウドにある一番新しい前の日の文書を今日の分へ引き継ぐ（無ければこの端末の分）
+      if (first) startDay();
     } else if (first && carry) {
       fs.setDoc(dayRef(), toDoc(state)).catch(() => {}); // ローカルから持ってきた分で、共有側の今日の分を置きかえる
     } else {
