@@ -1143,15 +1143,17 @@ function restHTML() {
     ['サイクリングマシーン', 'ランニングマシーン'], // 運動
     ['車椅子', '介護用トイレ', '畳'],                             // 介護（畳はおばあちゃんのイメージ）
     ['洗面台', 'ランドリーラック', 'ミラーキャビネット'],         // 洗面所
-    ['水槽', '滑り台', 'ホワイトボード'],                        // そのほか
+    [['水槽', 1], ['滑り台', 2], ['ホワイトボード', 3]],         // そのほか（マス数を指定：短い名前を細くして、ホワイトボードを全角で収める）
   ];
   const byNm = new Map(named.map(x => [x.nm, x]));
-  const rowsOf = NAME_ROWS.map(r => r.map(n => byNm.get(n)).filter(Boolean)).filter(r => r.length);
-  const rest = named.filter(x => !NAME_ROWS.flat().includes(x.nm));
+  // 行の中は、品名だけなら同じ幅。[品名, マス数] ならそのマス数（1行は6マス）
+  const nmOf = n => Array.isArray(n) ? n[0] : n;
+  const rowsOf = NAME_ROWS.map(r => r.map(n => { const x = byNm.get(nmOf(n)); return x && { ...x, sp: Array.isArray(n) ? n[1] : 0 }; }).filter(Boolean)).filter(r => r.length);
+  const rest = named.filter(x => !NAME_ROWS.flat().map(nmOf).includes(x.nm));
   for (let k = 0; k < rest.length; k += 3) rowsOf.push(rest.slice(k, k + 3));
   const yenBtn = (ii, x) => `<button class="tbtn" data-tier="${gi}-${ii}-${x.ti}"><span class="p">${x.t.price.toLocaleString('ja-JP')}円</span></button>`;
   const nameCard = `<div class="item"><div class="tiers" style="grid-template-columns:repeat(6,1fr)">${rowsOf.map(r => r.map(x =>
-    `<button class="tbtn" style="grid-column:span ${6 / r.length}" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${r.length >= 3 ? halfIfLong(x.nm) : x.nm}</span></button>`).join('')).join('')}</div></div>`;
+    `<button class="tbtn" style="grid-column:span ${x.sp || 6 / r.length}" data-tier="${gi}-${x.ii}-${x.ti}"><span class="p">${r.length >= 3 && !x.sp ? halfIfLong(x.nm) : x.nm}</span></button>`).join('')).join('')}</div></div>`;
   const rowCards = rows.map(({ it, ii, tis, title }) => {
     const long = it.kinds || it.free || tis.length > 3; // 種類・名前の欄があるか、値段が4つなら、ボタンは名前の下の段に
     const btns = tis.map(x => yenBtn(ii, x)).join('');
