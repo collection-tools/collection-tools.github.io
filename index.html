@@ -2262,8 +2262,7 @@ let carry = false; // ローカルから持ってきた中身を、共有側の�
 function goRoom(r) {
   if (r === room) { closeAll(); return; }
   // ローカルから共有へ移る時、いまの中身があれば「持っていく？」と聞く。持っていくなら共有側の今日の分は上書きされる
-  // ロック中は持っていかない（共有側の今日の分を書き換えない）。見に行くだけ
-  if (r && !room && hasContent(state) && !lockOn) {
+  if (r && !room && hasContent(state)) {
     const from = JSON.parse(JSON.stringify(state));
     ask(`いまのこの端末の台と総量を、「${r}」に持っていく？\n共有側に今日の分があれば、上書きされて消える。`, () => {
       if (!hasPlace(from)) { moveRoom(r, from); return; }
@@ -2281,6 +2280,8 @@ function goRoom(r) {
 }
 function moveRoom(r, bring) {
   save();
+  // 鍵は持ち越さない：ルームを移ったら外す
+  if (lockOn) { lockOn = false; try { localStorage.setItem('shuushuu3-lock', '0'); } catch (e) {} paintLock(); }
   room = r;
   try { r ? localStorage.setItem('shuushuu3-room', r) : localStorage.removeItem('shuushuu3-room'); } catch (e) {}
   if (r && !rooms.includes(r)) { rooms.unshift(r); saveRooms(); } // 並びは固定。新しいコードだけ上に足す
