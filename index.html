@@ -848,10 +848,10 @@ const sum = d => d.pts.reduce((a, p) => a + p, 0);
 const cur = () => state.dais[state.cur];
 // 総量を打っていて、まだ0pの台が1つだけなら、残りはその台の分に決まる。その台は残りを点数として見せる
 // （打っておくわけではないので、ほかの台を直せば一緒に変わる。その台に打てば打った数字になる）
-function autoDai() {
-  if (!state.goal) return -1;
-  const empty = state.dais.map((d, i) => sum(d) ? -1 : i).filter(i => i >= 0);
-  const rest = state.goal * 100 - state.dais.reduce((a, d) => a + sum(d), 0);
+function autoDai(st = state) {
+  if (!st.goal) return -1;
+  const empty = st.dais.map((d, i) => sum(d) ? -1 : i).filter(i => i >= 0);
+  const rest = st.goal * 100 - st.dais.reduce((a, d) => a + sum(d), 0);
   return empty.length === 1 && rest > 0 ? empty[0] : -1;
 }
 // 3台目と4台目の連動：総量があって5台とも埋まっている時、台の点数を打ち直して変えたら、もう片方が逆に動く（合計を保つ）。「移す」とは別
@@ -869,11 +869,19 @@ const linkTo = delta => {
   const others = state.dais.reduce((a, d, i) => i === state.cur || i === o ? a : a + sum(d), 0);
   return { o, to: state.goal * 100 - others - (sum(cur()) + delta) };
 };
+// 減らした時は、どの台も別の台へ回さず総量の残りに戻す（連動しない）
 function linkOK(delta) {
+  if (delta < 0) return true;
   const { o, to } = linkTo(delta);
   return o < 0 || (to >= 0 && to <= 99900);
 }
 function linkMove(delta) {
+  if (delta < 0) {
+    // 残りを自動で見せている別の台があれば、その数字で確定しておく（減らした分がその台に乗らず、残りに出る）
+    const a = autoDai();
+    if (a >= 0 && a !== state.cur) state.dais[a].pts = [val(a)];
+    return true;
+  }
   const { o, to } = linkTo(delta);
   if (o < 0) return true;
   if (to < 0 || to > 99900) return false;
@@ -887,6 +895,7 @@ function absorbRest(a) {
   const total = state.dais.reduce((x, d) => x + sum(d), 0);
   const before = a.dais.reduce((x, d) => x + sum(d), 0);
   if (total === before && (a.goal || 0) === state.goal) return; // 点数も総量も変えていない（大物だけ等）
+  if (total < before) return; // 減らした分は残りに戻す（4台目・3台目に引き取らせない）
   const rest = state.goal * 100 - total;
   if (!rest) return;
   for (const o of [3, 2]) {
@@ -1274,7 +1283,9 @@ function change(fn) {
   absorbRest(JSON.parse(before));
   // 済の台は金額を動かさない（打つ・ひく・移す・連動・残りの引き取り、どれでも）。動いたら、やらなかったことにして震える
   const b0 = JSON.parse(before);
-  if (state.dais.some((d, i) => d.done && b0.dais[i] && b0.dais[i].done && sum(d) !== sum(b0.dais[i]))) {
+  // 残りを自動で見せていた台を、見せていた数字のまま確定しただけなら動いたことにしない
+  const ba = autoDai(b0), bv = ba >= 0 ? b0.goal * 100 - b0.dais.reduce((x, d) => x + sum(d), 0) : 0;
+  if (state.dais.some((d, i) => d.done && b0.dais[i] && b0.dais[i].done && sum(d) !== sum(b0.dais[i]) && !(i === ba && sum(d) === bv))) {
     state = b0; history.pop(); render();
     const btn = lastPress && lastPress.closest('button');
     if (btn) shakeNg(btn); else if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
