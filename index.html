@@ -895,7 +895,8 @@ function absorbRest(a) {
   const total = state.dais.reduce((x, d) => x + sum(d), 0);
   const before = a.dais.reduce((x, d) => x + sum(d), 0);
   if (total === before && (a.goal || 0) === state.goal) return; // 点数も総量も変えていない（大物だけ等）
-  if (total < before) return; // 減らした分は残りに戻す（4台目・3台目に引き取らせない）
+  // 減らした分は残りに戻す（4台目・3台目に引き取らせない）。前に残りを自動で見せていた台があれば、その分も前の合計に入れて比べる
+  if (total < (autoDai(a) >= 0 ? a.goal * 100 : before)) return;
   const rest = state.goal * 100 - total;
   if (!rest) return;
   for (const o of [3, 2]) {
