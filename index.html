@@ -515,7 +515,8 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 .view-btn { height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); font: inherit; font-size: 15px; font-weight: 700; color: var(--text2); cursor: pointer; }
 .view-btn b { color: var(--text); }
 .srow { display: flex; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 12px; min-height: 52px; margin-bottom: 8px; cursor: pointer; }
-.chips { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; }
+/* 略の札は1枚の幅より縮めない（重ならない）。足りない分は場所のラベルが細くなって折り返す */
+.chips { flex: 1; min-width: min-content; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; }
 .chip { display: inline-flex; align-items: center; height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--card2); font-size: 18px; font-weight: 700; white-space: nowrap; }
 /* 箱物系の「解体済」：押すと、いまの現場で最後に登録した箱物に（解）が付く。もう一度押すと外れる */
 .kai { font: inherit; font-size: 14px; font-weight: 600; color: var(--text2); cursor: pointer; border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 3px 8px; }
@@ -543,7 +544,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
 .srow.shift { transition: transform .15s ease; }
 /* ✕で消す時：その行がたたまれて、下の行が上に詰まる */
 .srow.gone { overflow: hidden; pointer-events: none; opacity: 0; transition: height .22s ease, min-height .22s ease, margin .22s ease, opacity .15s ease, border-width .22s ease; }
-.splace { flex: none; align-self: center; min-width: 52px; max-width: 120px; min-height: 28px; margin-right: 8px; padding: 5px 10px; border: none; border-radius: 14px; background: var(--card2); color: var(--text2); font: inherit; font-size: 13px; font-weight: 600; line-height: 18px; white-space: normal; overflow-wrap: anywhere; text-align: center; cursor: pointer; }
+.splace { flex: 0 1 auto; align-self: center; min-width: 52px; max-width: 120px; min-height: 28px; margin-right: 8px; padding: 5px 10px; border: none; border-radius: 14px; background: var(--card2); color: var(--text2); font: inherit; font-size: 13px; font-weight: 600; line-height: 18px; white-space: normal; overflow-wrap: anywhere; text-align: center; cursor: pointer; }
 .shou { flex: 1; min-width: 0; padding: 10px 12px; font-size: 15px; font-weight: 700; line-height: 1.5; }
 /* 確かめる画面。どちらかを選んであるように見せない（2つのボタンは同じ見た目で、上下に並べるだけ） */
 .ask { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); padding: 24px; }
