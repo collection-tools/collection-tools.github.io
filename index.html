@@ -973,7 +973,7 @@ function render() {
   // まだ何も登録していない現場は「新規」（大物登録の中だけ。一覧には出さない）
   document.getElementById('bigNewLbl').hidden = editS != null || dai.bigs.some(b => b.s === ts);
   const labels = new Map();
-  const now = dai.bigs.filter(b => b.s === ts);
+  const now = dai.bigs.filter(b => b.s === ts && !b.empty); // 場所だけの空のカード（empty）は札に数えない
   for (const b of now) labels.set(bigLabel(b), (labels.get(bigLabel(b)) || 0) + 1);
   document.getElementById('siteBig').innerHTML = [...labels].map(([l, n]) =>
     `<button class="tag pend" data-unbig="${l}">${l}×${n} ✕</button>`).join('');
@@ -1241,9 +1241,9 @@ function groupsOf(dai) {
 function listHTML(groups) {
   return groups.map(g => `<div class="srow" data-edit="${g.s}">${view === 'ryaku'
     ? `<div class="chips">${
-        [...g.items.reduce((m, b) => m.set(abbr(b), (m.get(abbr(b)) || 0) + 1), new Map())].map(([a, n]) =>
+        [...g.items.filter(b => !b.empty).reduce((m, b) => m.set(abbr(b), (m.get(abbr(b)) || 0) + 1), new Map())].map(([a, n]) =>
         `<span class="chip">${a}${n > 1 ? '×' + n : ''}</span>`).join('')}</div>`
-    : `<div class="shou">${[...g.items.reduce((m, b) => m.set(bigLabel(b), (m.get(bigLabel(b)) || 0) + 1), new Map())].map(([l, n]) =>
+    : `<div class="shou">${[...g.items.filter(b => !b.empty).reduce((m, b) => m.set(bigLabel(b), (m.get(bigLabel(b)) || 0) + 1), new Map())].map(([l, n]) =>
         shouLabel(l) + (n > 1 ? '×' + n : '')).join('、')}</div>`
   }<button class="splace" data-place aria-label="場所を書く">${esc((g.items.find(b => b.place) || {}).place || '')}</button><button class="smove" data-smove aria-label="この現場を別の台へ移す">→</button><button class="sdel" data-sdel aria-label="この現場を消す">✕</button></div>`
   ).join('');
@@ -1361,7 +1361,7 @@ const lockMem = new Set();
 const placeKey = () => state.cur + '-' + targetS() + '-' + (editS != null);
 const placeLocked = () => lockMem.has(placeKey()) || cur().bigs.some(x => x.s === targetS() && x.plock);
 // 大物登録の「閉じる」
-document.getElementById('bigDone').onclick = () => { document.getElementById('bigPlace').blur(); saveBigPlace(); closeAll(); };
+document.getElementById('bigDone').onclick = () => { document.getElementById('bigPlace').blur(); saveBigPlace(true); closeAll(); };
 // 大物登録の「次」：閉じずに、登録の段だけ空にして次の現場へ（箱物の種類も選び直し）
 document.getElementById('bigNext').onclick = () => {
   const d = cur();
@@ -1372,15 +1372,19 @@ document.getElementById('bigNext').onclick = () => {
   buzz();
 };
 // 大物登録の場所の欄：打ち終わったら（離れる・Enter）この現場に付ける。まだ何も登録してない現場は、最初の登録に付く
-function saveBigPlace() {
+function saveBigPlace(make) {
   const v = document.getElementById('bigPlace').value.trim(), s = targetS();
-  if (!cur().bigs.some(x => x.s === s)) return;
+  if (!cur().bigs.some(x => x.s === s)) {
+    // 閉じる時：場所だけ打ってあって大物が1つも無ければ、札の無い空のカードを作る
+    if (make && v) change(() => { cur().bigs.push({ name: '', cond: '', short: '', empty: true, s, place: v, plock: true }); });
+    return;
+  }
   const now = (cur().bigs.find(x => x.s === s && x.place) || {}).place || '';
   if (v === now && (!v || placeLocked())) return;
-  if (!v) { change(() => { cur().bigs.forEach(x => { if (x.s === s) { delete x.place; delete x.plock; } }); }); return; }
+  if (!v) { change(() => { cur().bigs = cur().bigs.filter(x => !(x.empty && x.s === s)); cur().bigs.forEach(x => { if (x.s === s) { delete x.place; delete x.plock; } }); }); return; }
   change(() => { cur().bigs.forEach(x => { if (x.s === s) { x.place = v; x.plock = true; } }); });
 }
-document.getElementById('bigPlace').addEventListener('change', saveBigPlace);
+document.getElementById('bigPlace').addEventListener('change', () => saveBigPlace());
 document.getElementById('bigPlaceOk').onclick = () => { const bp = document.getElementById('bigPlace'); bp.blur(); saveBigPlace(); getSelection().removeAllRanges(); render(); };
 document.getElementById('bigPlace').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); getSelection().removeAllRanges(); } }); // 完了（☑）の後に、文字の選択（ハイライト）を残さない
 document.getElementById('placeIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); savePlace(); } });
@@ -1488,8 +1492,8 @@ document.addEventListener('click', e => {
     const kind = it.kinds && !t.name && !free ? document.querySelector(`[data-kind="${gi}-${ii}"]`).dataset.value : '';
     const nb = { name: t.name || it.name, cond: t.cond, short: it.short, ...(kind && { kind }), ...(free && { free }), s: targetS() };
     const pv = document.getElementById('bigPlace').value.trim(); // 場所の欄に打ってあれば、この現場の分に付ける
-    const pk = placeKey(), lk = lockMem.delete(pk); // 登録前に固定していたら、登録した現場の大物に引き継ぐ
-    change(() => { const L = cur().bigs; L.push(nb); if (pv) L.forEach(x => { if (x.s === nb.s) x.place = pv; if (lk && x.s === nb.s) x.plock = true; }); });
+    const pk = placeKey(); let lk = lockMem.delete(pk); // 登録前に固定していたら、登録した現場の大物に引き継ぐ
+    change(() => { const L = cur().bigs; const ph = L.find(x => x.empty && x.s === nb.s); if (ph) { L.splice(L.indexOf(ph), 1); if (ph.plock) lk = true; } L.push(nb); if (pv) L.forEach(x => { if (x.s === nb.s) x.place = pv; if (lk && x.s === nb.s) x.plock = true; }); });
     buzz();
   } else if (b.dataset.kai) {
     // いまの現場で最後に登録したその品目を、解体済（子供用）にする／戻す。まだ無ければ震える
@@ -2061,7 +2065,7 @@ function closeAll() {
   closeKindPops();
   // 大物登録を閉じたら、いまの現場は確定。次に開いた時は新しい現場から（登録が1つも無い現場は、そのまま残す。直す時は進めない）
   if (document.getElementById('bigSheet').classList.contains('on') && editS == null) {
-    document.getElementById('bigPlace').blur(); saveBigPlace(); // 場所は、現場が進む前に付ける
+    document.getElementById('bigPlace').blur(); saveBigPlace(true); // 場所は、現場が進む前に付ける（場所だけなら空のカードを作る）
     const d = cur();
     if (d.bigs.some(b => b.s === d.next)) change(() => { d.next++; });
   }
