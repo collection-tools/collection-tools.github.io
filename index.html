@@ -978,11 +978,14 @@ function render() {
   document.getElementById('siteBig').innerHTML = [...labels].map(([l, n]) =>
     `<button class="tag pend" data-unbig="${l}">${l}×${n} ✕</button>`).join('');
   // 押したボタンはグレーにして、上から「×n」を重ねる（いまの現場の分を数える）
+  // 箱物系のように種類を選ぶカードは、いま選んでいる種類（タンス・本棚など）の分だけ数える
   const counts = new Map();
-  for (const b of now) { const k = b.name + '|' + b.cond; counts.set(k, (counts.get(k) || 0) + 1); }
+  for (const b of now) { const k = b.name + '|' + b.cond + '|' + (b.kind || ''); counts.set(k, (counts.get(k) || 0) + 1); }
   document.querySelectorAll('[data-tier]').forEach(el => {
     const [gi, ii, ti] = el.dataset.tier.split('-').map(Number);
-    const it = GROUPS[gi].items[ii], t = it.tiers[ti], n = counts.get((t.name || it.name) + '|' + t.cond) || 0;
+    const it = GROUPS[gi].items[ii], t = it.tiers[ti];
+    const kb = it.kinds && !t.name ? document.querySelector(`[data-kind="${gi}-${ii}"]`) : null;
+    const n = counts.get((t.name || it.name) + '|' + t.cond + '|' + (kb ? kb.dataset.value || '' : '')) || 0;
     el.classList.toggle('has', n > 0);
     el.dataset.n = n ? `×${n}` : '';
   });
@@ -2009,6 +2012,7 @@ pager.addEventListener('scroll', () => {
 });
 function setKind(kb, v) {
   kb.dataset.value = v; kb.textContent = v || kb.dataset.label;
+  render(); // ボタンの「×n」を、選んだ種類の分に切りかえる
   document.querySelectorAll(`[data-pop="${kb.dataset.kind}"] button`).forEach(x => x.classList.toggle('on', x.dataset.pick === v));
 }
 function pickOther(pop) {
