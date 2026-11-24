@@ -2326,7 +2326,8 @@ function push(beforeJSON) {
   if (a.date !== state.date) { fs.setDoc(dayRef(), toDoc(state)).catch(() => {}); subscribe(); return; }
   if ((a.goal || 0) !== (state.goal || 0)) out.goal = state.goal || fs.deleteField();
   state.dais.forEach((d, i) => { if (JSON.stringify(d) !== JSON.stringify(a.dais[i])) out['d' + i] = d; });
-  if (Object.keys(out).length) fs.setDoc(dayRef(), out, { merge: true }).catch(() => {});
+  // merge だと台の中身が足し合わされて、外した「済」などがクラウドに残り続ける。変えた台はまるごと置きかえる（mergeFields）
+  if (Object.keys(out).length) fs.setDoc(dayRef(), out, { mergeFields: Object.keys(out) }).catch(() => {});
 }
 async function startDay() {
   const d = state.date;
