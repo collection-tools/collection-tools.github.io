@@ -2394,22 +2394,13 @@ function renderRooms() {
 }
 // ルームを移る。いまのルームの中身はそのまま残して、移った先の中身を出す。1つ戻すは移った先では使わない
 const hasContent = st => !!(st.goal || st.dais.some(d => d.pts.length || d.bigs.length));
-const hasPlace = st => st.dais.some(d => d.bigs.some(b => b.place));
 let carry = false; // ローカルから持ってきた中身を、共有側の今日の分に上書きで入れる（最初の1回だけ）
 function goRoom(r) {
   if (r === room) { closeAll(); return; }
   // ローカルから共有へ移る時、いまの中身があれば「持っていく？」と聞く。持っていくなら共有側の今日の分は上書きされる
   if (r && !room && hasContent(state)) {
     const from = JSON.parse(JSON.stringify(state));
-    ask(`いまのこの端末の台と総量を、「${r}」に持っていく？\n共有側に今日の分があれば、上書きされて消える。`, () => {
-      if (!hasPlace(from)) { moveRoom(r, from); return; }
-      // 場所の名前はクラウドに乗ると消せない。周りを押しても閉じない（どちらかを選ぶまで進まない）
-      ask('場所の欄に書いた名前は、クラウドに乗ると消せない。', () => {
-        from.dais.forEach(d => d.bigs.forEach(b => { delete b.place; delete b.plock; }));
-        moveRoom(r, from);
-      }, '場所を消して持っていく', 'そのまま持っていく', true);
-      document.getElementById('askNo').onclick = e => { e.stopPropagation(); document.getElementById('ask').classList.remove('on'); moveRoom(r, from); };
-    }, '持っていく', '持っていかない');
+    ask(`いまのこの端末の台と総量を、「${r}」に持っていく？\n共有側に今日の分があれば、上書きされて消える。`, () => moveRoom(r, from), '持っていく', '持っていかない');
     document.getElementById('askNo').onclick = e => { e.stopPropagation(); document.getElementById('ask').classList.remove('on'); moveRoom(r); };
     return;
   }
