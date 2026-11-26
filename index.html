@@ -439,7 +439,7 @@ tr.sub td { border-top-color: #f0f0ee; } /* 同じグループの続き。品目
   background: var(--accent); color: var(--on-accent); display: grid; place-items: center;
   font-size: 16px; font-weight: 700; font-family: inherit;
 }
-/* 大物登録・金額登録は、アニメなしでパッと出る。下に払うと閉じる */
+/* 大物登録・金額登録は、アニメなしでパッと出る */
 .tag.pend { background: transparent; border: 1.5px solid var(--text); color: var(--text); font-family: inherit; cursor: pointer; }
 .sheet.swiping button, .sheet.swiping .tbtn { pointer-events: none; }
 /* 左右に払うと、指には追従せず、次（前）の現場がその場で横から少し滑り込む。何も無い画面は挟まない */
@@ -1771,7 +1771,7 @@ document.addEventListener('click', e => { if (logSwallow) { logSwallow = false; 
 document.getElementById('doneBtn').onclick = () => change(() => { const d = cur(); if (d.done) delete d.done; else { fixAuto(); d.done = true; } }); // 残りを自動で見せている台は、その数字で確定してから済にする
 document.getElementById('subBtn').onclick = () => { if (!subMode && lockBlock(document.getElementById('subBtn'))) return; subMode = !subMode; paintSub(); document.getElementById('padAdd').classList.toggle('still', !padWillMove()); };
 // 電卓の大きい数字（スカウター）を押すと、料金のボタンの所がその場でテンキーに変わる。打った数字はスカウターに直に入る
-// 閉じる（もう一度スカウターを押す・閉じる・✕・下に払う）と、打った数字がそのままこの台の点数になる。何も打たなければ変えない
+// 閉じる（もう一度スカウターを押す・閉じる・✕）と、打った数字がそのままこの台の点数になる。何も打たなければ変えない
 function padEl() { return document.querySelector('.pad'); }
 function padHome() { return document.querySelector('#padSheet .sheet-body'); }
 function padIn() { return document.getElementById('calcSheet').classList.contains('padin'); }
@@ -1901,7 +1901,7 @@ function ask(msg, onOk, okText = 'OK', noText = 'キャンセル', strict = fals
   el.classList.add('on');
 }
 
-// 大物登録を左右に払うと、前の現場／次の現場へ（箱物の種類も選び直し）。次は、いまの現場に1つでも登録してある時だけ。閉じるは下に払う
+// 大物登録を左右に払うと、前の現場／次の現場へ（箱物の種類も選び直し）。次は、いまの現場に1つでも登録してある時だけ。
 function canGo(dir) {
   const to = targetS() + dir, maxS = cur().bigs.reduce((m, b) => Math.max(m, b.s), -1);
   return to >= 0 && to <= maxS + 1;
